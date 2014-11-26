@@ -18,8 +18,7 @@ CREATE TABLE projet.archetypes
 (
 	id_archetype		INTEGER 			PRIMARY KEY DEFAULT NEXTVAL('projet.id_archetype'),
 	nom				VARCHAR(100)		NOT NULL UNIQUE CHECK (nom<>''),
-	puissance		INTEGER			NOT NULL CHECK (puissance>=0),
-	CHECK (nb_victoires<=nb_combats)
+	puissance		INTEGER			NOT NULL CHECK (puissance>=0)
 );
 
 DROP TABLE IF EXISTS projet.combats CASCADE;

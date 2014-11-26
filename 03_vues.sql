@@ -3,12 +3,11 @@
 -- ---------------------------------------------------------------------------------
 
 -- Historique combats entre 2 dates / P-M
--- Procédure pour vérifier nom et date ?
 
 DROP VIEW IF EXISTS projet.historique_combats CASCADE;
 
-CREATE VIEW projet.historique_combats AS
-	SELECT c.*, pm.nom AS "nom_pm", a.nom AS "nom_archetype"
+CREATE VIEW projet.historique_combats (nom_pm, nom_archetype, date_debut, date_fin, est_gagne) AS
+	SELECT pm.nom AS "nom_pm", a.nom AS "nom_archetype", c.date_debut, c.date_fin, c.est_gagne
 	FROM projet.combats c
 	INNER JOIN projet.power_mangeurs pm ON c.id_pm = pm.id_pm
 	INNER JOIN projet.archetypes a ON c.id_archetype = a.id_archetype

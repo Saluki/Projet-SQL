@@ -38,7 +38,18 @@ Plan	 | Semaine | Fini | Chargé
 Questions
 ---------
 
-~ Nom unique ?
+- [Combats] date_debut et/ou date_fin comme point de repère ?
 
 Remarques
 ---------
+
+Snippets
+--------
+
+-- Vérifier l'existence du P-M
+
+    SELECT id_pm FROM projet.power_mangeurs WHERE nom = nom_pm INTO _id_pm;
+    IF NOT EXISTS(_id_pm) THEN
+        RAISE '% n\'existe pas !', _nom_pm USING ERRCODE = 'invalid_foreign_key';
+    END IF;
+
