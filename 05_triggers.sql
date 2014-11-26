@@ -1,0 +1,6 @@
+-- Combats
+--   BEFORE
+--     INSERT/UPDATE : Vérifier si nouvelle année et mettre stats à zéro (pour tout le monde) si c'est le cas
+--   AFTER
+--     INSERT : Incrémenter nb_combats (créer ligne de stat si pas existante)
+--     UPDATE : Incrémenter nb_victoires si combat gagné
