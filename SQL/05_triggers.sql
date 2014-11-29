@@ -4,3 +4,6 @@
 --   AFTER
 --     INSERT : Incrémenter nb_combats (créer ligne de stat si pas existante)
 --     UPDATE : Incrémenter nb_victoires si combat gagné
+-- Historique
+--	BEFORE
+--		SELECT : cf ligne 3

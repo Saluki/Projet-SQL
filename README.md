@@ -38,8 +38,6 @@ Plan	 | Semaine | Fini | Chargé
 Questions
 ---------
 
-- [Combats] date_debut et/ou date_fin comme point de repère ?
-
 Remarques
 ---------
 
