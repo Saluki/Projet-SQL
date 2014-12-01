@@ -1,3 +1,124 @@
+DROP SCHEMA IF EXISTS projet CASCADE;
+
+CREATE SCHEMA projet;
+
+CREATE SEQUENCE projet.id_power_mangeur;
+CREATE SEQUENCE projet.id_archetype;
+CREATE SEQUENCE projet.id_combat;
+CREATE SEQUENCE projet.id_power_up;CREATE TABLE projet.power_mangeurs
+(
+	id_pm 				INTEGER 			PRIMARY KEY DEFAULT NEXTVAL('projet.id_power_mangeur'),
+	nom 					VARCHAR(100) 	NOT NULL UNIQUE CHECK (nom<>''),
+	couleur 				CHAR(6) 			NOT NULL UNIQUE,
+	mot_de_passe 		VARCHAR(150) 	NOT NULL CHECK (mot_de_passe<>''),
+	vie 					INTEGER 			NOT NULL DEFAULT 10 CHECK (vie>=0),
+	puissance			INTEGER			NOT NULL DEFAULT 30 CHECK (puissance>=30),
+	date_inscription 	TIMESTAMP 		NOT NULL DEFAULT LOCALTIMESTAMP,
+	date_deces 			TIMESTAMP		,
+	CHECK (date_inscription<date_deces)
+);
+
+CREATE TABLE projet.archetypes
+(
+	id_archetype		INTEGER 			PRIMARY KEY DEFAULT NEXTVAL('projet.id_archetype'),
+	nom				VARCHAR(100)		NOT NULL UNIQUE CHECK (nom<>''),
+	puissance		INTEGER			NOT NULL CHECK (puissance>=0)
+);
+
+CREATE TABLE projet.combats
+(
+	id_combat		INTEGER		PRIMARY KEY DEFAULT NEXTVAL('projet.id_combat'),
+	id_pm			INTEGER		NOT NULL REFERENCES projet.power_mangeurs (id_pm),
+	id_archetype		INTEGER		NOT NULL REFERENCES projet.archetypes (id_archetype),
+	date_debut		TIMESTAMP	NOT NULL DEFAULT LOCALTIMESTAMP,
+	date_fin			TIMESTAMP	,
+	est_gagne		BOOLEAN		,
+	CHECK (date_debut<date_fin)
+);
+
+CREATE TABLE projet.power_ups
+(
+	id_pu			INTEGER 			PRIMARY KEY DEFAULT NEXTVAL('projet.id_power_up'),
+	nom				VARCHAR(100) 	NOT NULL CHECK (nom<>''),
+	id_pm			INTEGER			NOT NULL REFERENCES projet.power_mangeurs (id_pm),
+	date_attribution	TIMESTAMP 		NOT NULL DEFAULT LOCALTIMESTAMP,
+	facteur			INTEGER 			NOT NULL CHECK (facteur>0),
+	UNIQUE (nom, id_pm)
+);
+
+CREATE TABLE projet.utilisations
+(
+	id_combat			INTEGER 		NOT NULL REFERENCES projet.combats (id_combat),
+	id_pu				INTEGER 		NOT NULL REFERENCES projet.power_ups (id_pu),
+	date_utilisation		TIMESTAMP	NOT NULL DEFAULT LOCALTIMESTAMP,
+	PRIMARY KEY (id_combat, id_pu)
+);
+
+CREATE TABLE projet.statistiques
+(
+	id_pm				INTEGER	NOT NULL REFERENCES projet.power_mangeurs (id_pm),
+	id_archetype			INTEGER NOT NULL REFERENCES projet.archetypes (id_archetype),
+	nb_combats_total		INTEGER	NOT NULL DEFAULT 0 CHECK (nb_combats_total>=0),
+	nb_victoires_total	INTEGER	NOT NULL DEFAULT 0 CHECK (nb_victoires_total>=0),
+	nb_combats_annee		INTEGER	NOT NULL DEFAULT 0 CHECK (nb_combats_annee>=0),
+	nb_victoires_annee	INTEGER	NOT NULL DEFAULT 0 CHECK (nb_victoires_annee>=0),
+	PRIMARY KEY (id_pm, id_archetype),
+	CHECK (nb_victoires_total<=nb_combats_total),
+	CHECK (nb_victoires_annee<=nb_combats_annee)
+);-- ---------------------------------------------------------------------------------
+--                                    Toriko
+-- ---------------------------------------------------------------------------------
+
+-- Historique combats entre 2 dates / P-M
+
+CREATE VIEW projet.historique_combats (nom_pm, nom_archetype, date_debut, date_fin, est_gagne) AS
+	SELECT pm.nom AS "nom_pm", a.nom AS "nom_archetype", c.date_debut, c.date_fin, c.est_gagne
+	FROM projet.combats c
+	INNER JOIN projet.power_mangeurs pm ON c.id_pm = pm.id_pm
+	INNER JOIN projet.archetypes a ON c.id_archetype = a.id_archetype
+	ORDER BY c.date_debut ASC;
+
+-- Classement meilleurs P-M
+
+CREATE VIEW projet.classement_pm AS
+	SELECT pm.nom AS "nom", SUM(s.nb_victoires_annee) AS "victoires"
+	FROM projet.statistiques s
+	INNER JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
+	GROUP BY nom
+	ORDER BY victoires DESC;
+
+-- Liste P-M décédés
+
+CREATE VIEW projet.liste_decedes AS
+	SELECT pm.nom, pm.date_deces
+	FROM projet.power_mangeurs pm
+	WHERE pm.date_deces IS NOT NULL
+		AND extract( year from pm.date_deces ) = extract( year from NOW() );
+
+-- Autres...
+
+-- ---------------------------------------------------------------------------------
+--                                Power-Mangeurs
+-- ---------------------------------------------------------------------------------
+
+-- Historique dernier combat
+
+CREATE VIEW projet.historique_dernier_combat AS
+	SELECT c.id_pm, pu.nom AS "nom_pu", u.date_utilisation, c.date_debut, c.date_fin
+	FROM projet.combats c
+	LEFT JOIN projet.utilisations u ON c.id_combat = u.id_combat
+	LEFT JOIN projet.power_ups pu ON u.id_pu = pu.id_pu
+	ORDER BY c.date_debut DESC
+	LIMIT 1;
+
+-- Nombre monstres combattus/gagnés depuis début/année
+
+CREATE VIEW projet.statistiques_combats AS
+	SELECT s.*, a.nom AS "nom_archetype"
+	FROM projet.statistiques s
+	INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype;
+
+-- Autres...
 -- ----------------------------------------------------------------------------------------------------------------------
 --                                                    Toriko
 -- ----------------------------------------------------------------------------------------------------------------------
@@ -52,8 +173,7 @@ DECLARE
 BEGIN
 
 	-- Vérifier l'existence du P-M
-	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = nom_pm;
-	IF (_id_pm IS NULL) THEN
+	IF NOT EXISTS(SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = nom_pm) THEN
 		RAISE '% n''existe pas !', _nom_pm USING ERRCODE = 'invalid_foreign_key';
 	END IF;
 
@@ -166,19 +286,19 @@ DECLARE
 	_id_combat				INTEGER;
 	_derniere_utilisation	TIMESTAMP;
 BEGIN
-	
+
 	SELECT id_combat INTO _id_combat FROM projet.combats WHERE id_pm = _id_pm AND date_fin IS NULL;
 	IF (_id_combat IS NULL) THEN
 		RAISE 'Pas de combat en cours.';
 	END IF;
-	
+
 	-- Vérifier que P-U n'a pas déjà été utilisé aujourd'hui
 	SELECT date_utilisation INTO _derniere_utilisation FROM projet.utilisations WHERE id_pu = _id_pu ORDER BY date_utilisation DESC LIMIT 1;
-	
+
 	-- 1x/jour : date_trunc('day', _derniere_utilisation) < date_trunc('day', NOW())
 	-- 1x/24h : (NOW()-_derniere_utilisation) > interval '1 day'
 	IF (_derniere_utilisation IS NULL OR FALSE) THEN
-		
+	
 		INSERT INTO projet.utilisations (id_combat, id_pu) VALUES (_id_combat, _id_pu);
 		UPDATE projet.power_mangeurs SET puissance = puissance+puissance*_facteur/100 WHERE id_pm = _id_pm;
 		
@@ -187,7 +307,7 @@ BEGIN
 	END IF;
 	
 	RETURN TRUE;
-	
+
 END;
 $$ LANGUAGE plpgsql;
 
@@ -217,7 +337,7 @@ BEGIN
 	FOR _power_up IN 
 		SELECT ut.date_utilisation, pu.nom FROM projet.utilisations ut INNER JOIN projet.power_ups pu ON ut.id_pu = pu.id_pu WHERE id_combat = _id_combat ORDER BY ut.date_utilisation ASC
 	LOOP
-		SELECT _power_up.date_utilisation, 'Activation du P-U ' || _power_up.nom INTO _action;
+		SELECT _power_up.date_utilisation, 'Activation du P-U "' || _power_up.nom || '"' INTO _action;
 		RETURN NEXT _action;
 	END LOOP;
 	
@@ -257,3 +377,60 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
+-- Vérifier si nouvelle année et mettre stats de l'année à zéro (pour tout le monde) si c'est le cas
+
+/*
+-- AFTER UPDATE combats
+
+-- Victoire
+
+CREATE FUNCTION projet.ajouter_victoire() RETURNS trigger AS $$
+BEGIN
+
+	UPDATE projet.statistiques SET nb_victoires_total = nb_victoires_total+1, nb_victoires_annee = nb_victoires_annee+1 WHERE id_pm = NEW.id_pm AND id_archetype = NEW.id_arch;
+	
+	RETURN NEW;
+
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER ajouter_victoire 
+	AFTER UPDATE OF est_gagne ON projet.combats
+	FOR EACH ROW
+	WHEN (OLD.est_gagne IS NULL AND NEW.est_gagne == TRUE)
+	EXECUTE PROCEDURE projet.ajouter_victoire();
+
+-- Défaite
+
+CREATE FUNCTION projet.ajouter_defaite() RETURNS trigger AS $$
+DECLARE
+	_vie		INTEGER;
+BEGIN
+
+	UPDATE projet.power_mangeurs SET vie = vie-1 WHERE id_pm = NEW.id_pm RETURNING vie INTO _vie;
+	
+	IF (_vie == 0) THEN
+		UPDATE projet.power_mangeurs SET date_deces = LOCALTIMESTAMP WHERE id_pm = NEW.id_pm;
+	END IF;
+
+	RETURN NEW;
+
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER ajouter_defaite 
+	AFTER UPDATE OF est_gagne ON projet.combats
+	FOR EACH ROW
+	WHEN (OLD.est_gagne IS NULL AND NEW.est_gagne == FALSE)
+	EXECUTE PROCEDURE projet.ajouter_defaite();
+*/DELETE FROM projet.power_mangeurs;
+
+INSERT INTO projet.power_mangeurs (nom, mot_de_passe, couleur) VALUES
+	('Jean', 'jeanjean', 'C04AD1'),
+	('Marc', 'moncul', '7D28B1'),
+	('Charles', 'chapeau', '2E69A3'),
+	('Hubert', 'trululu', 'A8FF20'),
+	('Claude', 'fouillon', '4B783D'),
+	('François', 'bouillon', 'D591B5'),
+	('Gérard', 'lambert', '930C48'),
+	('Roger', 'rototo', '16D93C');

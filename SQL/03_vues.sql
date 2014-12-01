@@ -4,8 +4,6 @@
 
 -- Historique combats entre 2 dates / P-M
 
-DROP VIEW IF EXISTS projet.historique_combats CASCADE;
-
 CREATE VIEW projet.historique_combats (nom_pm, nom_archetype, date_debut, date_fin, est_gagne) AS
 	SELECT pm.nom AS "nom_pm", a.nom AS "nom_archetype", c.date_debut, c.date_fin, c.est_gagne
 	FROM projet.combats c
@@ -15,8 +13,6 @@ CREATE VIEW projet.historique_combats (nom_pm, nom_archetype, date_debut, date_f
 
 -- Classement meilleurs P-M
 
-DROP VIEW IF EXISTS projet.classement_pm CASCADE;
-
 CREATE VIEW projet.classement_pm AS
 	SELECT pm.nom AS "nom", SUM(s.nb_victoires_annee) AS "victoires"
 	FROM projet.statistiques s
@@ -25,8 +21,6 @@ CREATE VIEW projet.classement_pm AS
 	ORDER BY victoires DESC;
 
 -- Liste P-M décédés
-
-DROP VIEW IF EXISTS projet.liste_decedes CASCADE;
 
 CREATE VIEW projet.liste_decedes AS
 	SELECT pm.nom, pm.date_deces
@@ -42,8 +36,6 @@ CREATE VIEW projet.liste_decedes AS
 
 -- Historique dernier combat
 
-DROP VIEW IF EXISTS projet.historique_dernier_combat CASCADE;
-
 CREATE VIEW projet.historique_dernier_combat AS
 	SELECT c.id_pm, pu.nom AS "nom_pu", u.date_utilisation, c.date_debut, c.date_fin
 	FROM projet.combats c
@@ -53,8 +45,6 @@ CREATE VIEW projet.historique_dernier_combat AS
 	LIMIT 1;
 
 -- Nombre monstres combattus/gagnés depuis début/année
-
-DROP VIEW IF EXISTS projet.statistiques_combats CASCADE;
 
 CREATE VIEW projet.statistiques_combats AS
 	SELECT s.*, a.nom AS "nom_archetype"

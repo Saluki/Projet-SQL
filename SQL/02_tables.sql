@@ -1,5 +1,3 @@
-DROP TABLE IF EXISTS projet.power_mangeurs CASCADE;
-
 CREATE TABLE projet.power_mangeurs
 (
 	id_pm 				INTEGER 			PRIMARY KEY DEFAULT NEXTVAL('projet.id_power_mangeur'),
@@ -7,12 +5,11 @@ CREATE TABLE projet.power_mangeurs
 	couleur 				CHAR(6) 			NOT NULL UNIQUE,
 	mot_de_passe 		VARCHAR(150) 	NOT NULL CHECK (mot_de_passe<>''),
 	vie 					INTEGER 			NOT NULL DEFAULT 10 CHECK (vie>=0),
+	puissance			INTEGER			NOT NULL DEFAULT 30 CHECK (puissance>=30),
 	date_inscription 	TIMESTAMP 		NOT NULL DEFAULT LOCALTIMESTAMP,
 	date_deces 			TIMESTAMP		,
 	CHECK (date_inscription<date_deces)
 );
-
-DROP TABLE IF EXISTS projet.archetypes CASCADE;
 
 CREATE TABLE projet.archetypes
 (
@@ -20,8 +17,6 @@ CREATE TABLE projet.archetypes
 	nom				VARCHAR(100)		NOT NULL UNIQUE CHECK (nom<>''),
 	puissance		INTEGER			NOT NULL CHECK (puissance>=0)
 );
-
-DROP TABLE IF EXISTS projet.combats CASCADE;
 
 CREATE TABLE projet.combats
 (
@@ -34,8 +29,6 @@ CREATE TABLE projet.combats
 	CHECK (date_debut<date_fin)
 );
 
-DROP TABLE IF EXISTS projet.power_ups CASCADE;
-
 CREATE TABLE projet.power_ups
 (
 	id_pu			INTEGER 			PRIMARY KEY DEFAULT NEXTVAL('projet.id_power_up'),
@@ -46,8 +39,6 @@ CREATE TABLE projet.power_ups
 	UNIQUE (nom, id_pm)
 );
 
-DROP TABLE IF EXISTS projet.utilisations CASCADE;
-
 CREATE TABLE projet.utilisations
 (
 	id_combat			INTEGER 		NOT NULL REFERENCES projet.combats (id_combat),
@@ -55,8 +46,6 @@ CREATE TABLE projet.utilisations
 	date_utilisation		TIMESTAMP	NOT NULL DEFAULT LOCALTIMESTAMP,
 	PRIMARY KEY (id_combat, id_pu)
 );
-
-DROP TABLE IF EXISTS projet.statistiques CASCADE;
 
 CREATE TABLE projet.statistiques
 (
