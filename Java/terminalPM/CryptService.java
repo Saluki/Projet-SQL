@@ -1,4 +1,4 @@
-package crypt;
+package terminalPM;
 
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
@@ -10,7 +10,7 @@ import javax.crypto.spec.PBEKeySpec;
 public class CryptService {
 		
 	private static final int ITERATIONS = 1000;
-	private static final String SALT = "RANDOMSALT";
+	private static final String SALT = "FE26EEE87B528135";
 	private static final int KEYLENGTH = 64*8;
 	private static final String CIPHER = "PBKDF2WithHmacSHA1";
 	

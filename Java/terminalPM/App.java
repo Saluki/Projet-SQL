@@ -1,20 +1,19 @@
 
-package pm;
+package terminalPM;
 
 import java.sql.*;
 import java.util.Scanner;
 
-import crypt.CryptService;
-
-public class TerminalPM {
+public class App {
 	
 	private static final String USER = "corentin";
 	private static final String PASS = "password";
 	private static Scanner scan = new Scanner(System.in);
 	
+	@SuppressWarnings("unused")
 	private Connection dbConnection;
 	
-	public TerminalPM() {
+	public App() {
 		
 		super();
 		dbConnect();
@@ -75,7 +74,7 @@ public class TerminalPM {
 		System.out.println("----------------------\n");
 	}
 	
-	private void getInformations() {
+	/*private void getInformations() {
 
 		try {
 			// Exectution pour mise a jour
@@ -101,11 +100,11 @@ public class TerminalPM {
 			e.printStackTrace();
 			System.exit(1);
 		}
-	}
+	}*/
 
 	public static void main(String[] args) {
 		
-		new TerminalPM();
+		new App();
 	}
 
 }
