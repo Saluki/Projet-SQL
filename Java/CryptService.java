@@ -39,4 +39,9 @@ public class CryptService {
         
         return hex;
     }
+	
+	public static void main(String[] args){
+		
+		System.out.println( CryptService.hash("password") );
+	}
 }
