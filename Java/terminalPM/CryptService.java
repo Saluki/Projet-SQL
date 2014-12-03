@@ -3,6 +3,7 @@ package terminalPM;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidParameterException;
+import java.util.Scanner;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -42,6 +43,11 @@ public class CryptService {
 	
 	public static void main(String[] args){
 		
-		System.out.println( CryptService.hash("password") );
+		System.out.println("Enter text to crypt:");
+		Scanner scan = new Scanner(System.in);
+		
+		System.out.println( CryptService.hash(scan.next()) );
+		
+		scan.close();
 	}
 }
