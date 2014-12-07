@@ -144,7 +144,7 @@ BEGIN
 		
 		-- Décrémenter vie P-M
 		UPDATE projet.power_mangeurs SET vie = vie-1 WHERE id_pm = _id_pm RETURNING vie INTO _vie;
-		IF (_vie == 0) THEN
+		IF (_vie = 0) THEN
 			UPDATE projet.power_mangeurs SET date_deces = LOCALTIMESTAMP WHERE id_pm = _id_pm;
 		END IF;
 		
@@ -166,7 +166,7 @@ DECLARE
 	_id_combat				INTEGER;
 	_derniere_utilisation	TIMESTAMP;
 BEGIN
-	
+
 	SELECT id_combat INTO _id_combat FROM projet.combats WHERE id_pm = _id_pm AND date_fin IS NULL;
 	IF (_id_combat IS NULL) THEN
 		RAISE 'Pas de combat en cours.';
@@ -244,9 +244,9 @@ BEGIN
 
 	SELECT date_inscription, vie INTO _date_inscription, _vie FROM projet.power_mangeurs WHERE id_pm = _id;
 
-	IF (_vie == 0) THEN
+	IF (_vie = 0) THEN
 		RAISE EXCEPTION 'Vous êtes mort !';
-	ELSIF (_vie == 10) THEN
+	ELSIF (_vie = 10) THEN
 		RAISE WARNING 'Vous êtes invincible !';
 		RETURN 0;
 	END IF;
