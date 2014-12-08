@@ -7,64 +7,64 @@ CREATE SEQUENCE projet.id_archetype;
 CREATE SEQUENCE projet.id_combat;
 CREATE SEQUENCE projet.id_power_up;CREATE TABLE projet.power_mangeurs
 (
-	id_pm 				INTEGER 			PRIMARY KEY DEFAULT NEXTVAL('projet.id_power_mangeur'),
-	nom 					VARCHAR(100) 	NOT NULL UNIQUE CHECK (nom<>''),
-	couleur 				CHAR(6) 			NOT NULL UNIQUE,
-	mot_de_passe 		VARCHAR(150) 	NOT NULL CHECK (mot_de_passe<>''),
-	vie 					INTEGER 			NOT NULL DEFAULT 10 CHECK (vie>=0),
-	puissance			INTEGER			NOT NULL DEFAULT 30 CHECK (puissance>=30),
-	date_inscription 	TIMESTAMP 		NOT NULL DEFAULT LOCALTIMESTAMP,
-	date_deces 			TIMESTAMP		,
-	CHECK (date_inscription<date_deces)
+  id_pm            INTEGER PRIMARY KEY   DEFAULT NEXTVAL('projet.id_power_mangeur'),
+  nom              VARCHAR(100) NOT NULL UNIQUE CHECK (length(btrim(nom)) >= 3),
+  couleur          CHAR(6)      NOT NULL UNIQUE,
+  mot_de_passe     VARCHAR(150) NOT NULL CHECK (mot_de_passe <> ''),
+  vie              INTEGER      NOT NULL DEFAULT 10 CHECK (vie >= 0),
+  puissance        INTEGER      NOT NULL DEFAULT 30 CHECK (puissance >= 30),
+  date_inscription TIMESTAMP    NOT NULL DEFAULT LOCALTIMESTAMP,
+  date_deces       TIMESTAMP,
+  CHECK (date_inscription < date_deces)
 );
 
 CREATE TABLE projet.archetypes
 (
-	id_archetype		INTEGER 			PRIMARY KEY DEFAULT NEXTVAL('projet.id_archetype'),
-	nom				VARCHAR(100)		NOT NULL UNIQUE CHECK (nom<>''),
-	puissance		INTEGER			NOT NULL CHECK (puissance>=0)
+  id_archetype INTEGER PRIMARY KEY DEFAULT NEXTVAL('projet.id_archetype'),
+  nom          VARCHAR(100) NOT NULL UNIQUE CHECK (nom <> ''),
+  puissance    INTEGER      NOT NULL CHECK (puissance >= 0)
 );
 
 CREATE TABLE projet.combats
 (
-	id_combat		INTEGER		PRIMARY KEY DEFAULT NEXTVAL('projet.id_combat'),
-	id_pm			INTEGER		NOT NULL REFERENCES projet.power_mangeurs (id_pm),
-	id_archetype		INTEGER		NOT NULL REFERENCES projet.archetypes (id_archetype),
-	date_debut		TIMESTAMP	NOT NULL DEFAULT LOCALTIMESTAMP,
-	date_fin			TIMESTAMP	,
-	est_gagne		BOOLEAN		,
-	CHECK (date_debut<date_fin)
+  id_combat    INTEGER PRIMARY KEY DEFAULT NEXTVAL('projet.id_combat'),
+  id_pm        INTEGER   NOT NULL REFERENCES projet.power_mangeurs (id_pm),
+  id_archetype INTEGER   NOT NULL REFERENCES projet.archetypes (id_archetype),
+  date_debut   TIMESTAMP NOT NULL  DEFAULT LOCALTIMESTAMP,
+  date_fin     TIMESTAMP,
+  est_gagne    BOOLEAN,
+  CHECK (date_debut < date_fin)
 );
 
 CREATE TABLE projet.power_ups
 (
-	id_pu			INTEGER 			PRIMARY KEY DEFAULT NEXTVAL('projet.id_power_up'),
-	nom				VARCHAR(100) 	NOT NULL CHECK (nom<>''),
-	id_pm			INTEGER			NOT NULL REFERENCES projet.power_mangeurs (id_pm),
-	date_attribution	TIMESTAMP 		NOT NULL DEFAULT LOCALTIMESTAMP,
-	facteur			INTEGER 			NOT NULL CHECK (facteur>0),
-	UNIQUE (nom, id_pm)
+  id_pu            INTEGER PRIMARY KEY   DEFAULT NEXTVAL('projet.id_power_up'),
+  nom              VARCHAR(100) NOT NULL CHECK (nom <> ''),
+  id_pm            INTEGER      NOT NULL REFERENCES projet.power_mangeurs (id_pm),
+  date_attribution TIMESTAMP    NOT NULL DEFAULT LOCALTIMESTAMP,
+  facteur          INTEGER      NOT NULL CHECK (facteur > 0),
+  UNIQUE (nom, id_pm)
 );
 
 CREATE TABLE projet.utilisations
 (
-	id_combat			INTEGER 		NOT NULL REFERENCES projet.combats (id_combat),
-	id_pu				INTEGER 		NOT NULL REFERENCES projet.power_ups (id_pu),
-	date_utilisation		TIMESTAMP	NOT NULL DEFAULT LOCALTIMESTAMP,
-	PRIMARY KEY (id_combat, id_pu)
+  id_combat        INTEGER   NOT NULL REFERENCES projet.combats (id_combat),
+  id_pu            INTEGER   NOT NULL REFERENCES projet.power_ups (id_pu),
+  date_utilisation TIMESTAMP NOT NULL DEFAULT LOCALTIMESTAMP,
+  PRIMARY KEY (id_combat, id_pu)
 );
 
 CREATE TABLE projet.statistiques
 (
-	id_pm				INTEGER	NOT NULL REFERENCES projet.power_mangeurs (id_pm),
-	id_archetype			INTEGER NOT NULL REFERENCES projet.archetypes (id_archetype),
-	nb_combats_total		INTEGER	NOT NULL DEFAULT 0 CHECK (nb_combats_total>=0),
-	nb_victoires_total	INTEGER	NOT NULL DEFAULT 0 CHECK (nb_victoires_total>=0),
-	nb_combats_annee		INTEGER	NOT NULL DEFAULT 0 CHECK (nb_combats_annee>=0),
-	nb_victoires_annee	INTEGER	NOT NULL DEFAULT 0 CHECK (nb_victoires_annee>=0),
-	PRIMARY KEY (id_pm, id_archetype),
-	CHECK (nb_victoires_total<=nb_combats_total),
-	CHECK (nb_victoires_annee<=nb_combats_annee)
+  id_pm              INTEGER NOT NULL REFERENCES projet.power_mangeurs (id_pm),
+  id_archetype       INTEGER NOT NULL REFERENCES projet.archetypes (id_archetype),
+  nb_combats_total   INTEGER NOT NULL DEFAULT 0 CHECK (nb_combats_total >= 0),
+  nb_victoires_total INTEGER NOT NULL DEFAULT 0 CHECK (nb_victoires_total >= 0),
+  nb_combats_annee   INTEGER NOT NULL DEFAULT 0 CHECK (nb_combats_annee >= 0),
+  nb_victoires_annee INTEGER NOT NULL DEFAULT 0 CHECK (nb_victoires_annee >= 0),
+  PRIMARY KEY (id_pm, id_archetype),
+  CHECK (nb_victoires_total <= nb_combats_total),
+  CHECK (nb_victoires_annee <= nb_combats_annee)
 );-- ---------------------------------------------------------------------------------
 --                                    Toriko
 -- ---------------------------------------------------------------------------------
@@ -93,13 +93,21 @@ CREATE VIEW projet.liste_decedes AS
 	SELECT pm.nom, pm.date_deces
 	FROM projet.power_mangeurs pm
 	WHERE pm.date_deces IS NOT NULL
-		AND extract( year from pm.date_deces ) = extract( year from NOW() );
+		AND EXTRACT( YEAR FROM pm.date_deces ) = EXTRACT( YEAR FROM NOW() );
 
 -- Autres...
 
 -- ---------------------------------------------------------------------------------
 --                                Power-Mangeurs
 -- ---------------------------------------------------------------------------------
+
+-- Monstro-nourriture tire au hasard
+
+CREATE VIEW projet.monstre_au_hasard AS
+	SELECT a.*
+	FROM projet.archetypes a
+	ORDER BY RANDOM()
+	LIMIT 1;
 
 -- Historique dernier combat
 
@@ -173,7 +181,8 @@ DECLARE
 BEGIN
 
 	-- Vérifier l'existence du P-M
-	IF NOT EXISTS(SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = nom_pm) THEN
+	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = nom_pm;
+	IF (_id_pm IS NULL) THEN
 		RAISE '% n''existe pas !', _nom_pm USING ERRCODE = 'invalid_foreign_key';
 	END IF;
 
@@ -264,7 +273,7 @@ BEGIN
 		
 		-- Décrémenter vie P-M
 		UPDATE projet.power_mangeurs SET vie = vie-1 WHERE id_pm = _id_pm RETURNING vie INTO _vie;
-		IF (_vie == 0) THEN
+		IF (_vie = 0) THEN
 			UPDATE projet.power_mangeurs SET date_deces = LOCALTIMESTAMP WHERE id_pm = _id_pm;
 		END IF;
 		
@@ -291,14 +300,14 @@ BEGIN
 	IF (_id_combat IS NULL) THEN
 		RAISE 'Pas de combat en cours.';
 	END IF;
-
+	
 	-- Vérifier que P-U n'a pas déjà été utilisé aujourd'hui
 	SELECT date_utilisation INTO _derniere_utilisation FROM projet.utilisations WHERE id_pu = _id_pu ORDER BY date_utilisation DESC LIMIT 1;
-
+	
 	-- 1x/jour : date_trunc('day', _derniere_utilisation) < date_trunc('day', NOW())
 	-- 1x/24h : (NOW()-_derniere_utilisation) > interval '1 day'
 	IF (_derniere_utilisation IS NULL OR FALSE) THEN
-	
+		
 		INSERT INTO projet.utilisations (id_combat, id_pu) VALUES (_id_combat, _id_pu);
 		UPDATE projet.power_mangeurs SET puissance = puissance+puissance*_facteur/100 WHERE id_pm = _id_pm;
 		
@@ -307,7 +316,7 @@ BEGIN
 	END IF;
 	
 	RETURN TRUE;
-
+	
 END;
 $$ LANGUAGE plpgsql;
 
@@ -337,7 +346,7 @@ BEGIN
 	FOR _power_up IN 
 		SELECT ut.date_utilisation, pu.nom FROM projet.utilisations ut INNER JOIN projet.power_ups pu ON ut.id_pu = pu.id_pu WHERE id_combat = _id_combat ORDER BY ut.date_utilisation ASC
 	LOOP
-		SELECT _power_up.date_utilisation, 'Activation du P-U "' || _power_up.nom || '"' INTO _action;
+		SELECT _power_up.date_utilisation, 'Activation du P-U ' || _power_up.nom INTO _action;
 		RETURN NEXT _action;
 	END LOOP;
 	
@@ -364,9 +373,9 @@ BEGIN
 
 	SELECT date_inscription, vie INTO _date_inscription, _vie FROM projet.power_mangeurs WHERE id_pm = _id;
 
-	IF (_vie == 0) THEN
+	IF (_vie = 0) THEN
 		RAISE EXCEPTION 'Vous êtes mort !';
-	ELSIF (_vie == 10) THEN
+	ELSIF (_vie = 10) THEN
 		RAISE WARNING 'Vous êtes invincible !';
 		RETURN 0;
 	END IF;
@@ -423,14 +432,28 @@ CREATE TRIGGER ajouter_defaite
 	FOR EACH ROW
 	WHEN (OLD.est_gagne IS NULL AND NEW.est_gagne == FALSE)
 	EXECUTE PROCEDURE projet.ajouter_defaite();
-*/DELETE FROM projet.power_mangeurs;
+*/-- Suppression ordonne pour eviter violation des contraintes
 
-INSERT INTO projet.power_mangeurs (nom, mot_de_passe, couleur) VALUES
-	('Jean', 'jeanjean', 'C04AD1'),
-	('Marc', 'moncul', '7D28B1'),
-	('Charles', 'chapeau', '2E69A3'),
-	('Hubert', 'trululu', 'A8FF20'),
-	('Claude', 'fouillon', '4B783D'),
-	('François', 'bouillon', 'D591B5'),
-	('Gérard', 'lambert', '930C48'),
-	('Roger', 'rototo', '16D93C');
+DELETE FROM projet.utilisations;
+DELETE FROM projet.combats;
+DELETE FROM projet.power_ups;
+DELETE FROM projet.archetypes;
+DELETE FROM projet.power_mangeurs;
+
+-- Power Mangeurs
+
+INSERT INTO projet.power_mangeurs (id_pm, nom, mot_de_passe, couleur, vie, date_inscription, date_deces) VALUES
+(1, 'Jean', '984facf29f1f1701b7f474f64e3ba3f0e14375947b0f22392272a44892cf64802a921728b5445920c0244675992da3ff0e3ab950c1d63d3c4a1d89ed9deee635', 'C04AD1', DEFAULT, DEFAULT, NULL),
+(2, 'Gerard', '984facf29f1f1701b7f474f64e3ba3f0e14375947b0f22392272a44892cf64802a921728b5445920c0244675992da3ff0e3ab950c1d63d3c4a1d89ed9deee635', '930C48', DEFAULT, '2014-12-03 18:15:12', NULL),
+(3, 'Charles', '984facf29f1f1701b7f474f64e3ba3f0e14375947b0f22392272a44892cf64802a921728b5445920c0244675992da3ff0e3ab950c1d63d3c4a1d89ed9deee635', '2E69A3', 3, '2014-09-02 14:30:20', NULL),
+(4, 'Hubert', '984facf29f1f1701b7f474f64e3ba3f0e14375947b0f22392272a44892cf64802a921728b5445920c0244675992da3ff0e3ab950c1d63d3c4a1d89ed9deee635', 'A8FF20', 0, '2014-08-15 17:03:20', '2014-11-30 11:20:54');
+        
+-- Archetypes
+       
+SELECT * FROM projet.ajouter_archetype('Concombre', 15);
+SELECT * FROM projet.ajouter_archetype('Couscous', 45);
+        
+-- Power Ups
+        
+INSERT INTO projet.power_ups (nom, id_pm, date_attribution, facteur) VALUES ('Orbe Bleue', 1, DEFAULT, 50);
+INSERT INTO projet.power_ups (nom, id_pm, date_attribution, facteur) VALUES ('Supra Ketchup', 1, DEFAULT, 50);
