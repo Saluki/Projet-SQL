@@ -9,3 +9,7 @@ INSERT INTO projet.power_mangeurs (nom, mot_de_passe, couleur) VALUES
 	('François', 'bouillon', 'D591B5'),
 	('Gérard', 'lambert', '930C48'),
 	('Roger', 'rototo', '16D93C');
+
+SELECT * FROM projet.ajouter_archetype('Couscous', 45);
+SELECT * FROM projet.ajouter_archetype('Concombre', 15);
+

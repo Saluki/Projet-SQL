@@ -34,6 +34,14 @@ CREATE VIEW projet.liste_decedes AS
 --                                Power-Mangeurs
 -- ---------------------------------------------------------------------------------
 
+-- Monstro-nourriture tire au hasard
+
+CREATE VIEW projet.monstre_au_hasard AS
+	SELECT a.*
+	FROM projet.archetypes a
+	ORDER BY RANDOM()
+	LIMIT 1;
+
 -- Historique dernier combat
 
 CREATE VIEW projet.historique_dernier_combat AS

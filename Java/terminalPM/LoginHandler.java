@@ -6,6 +6,7 @@ import java.util.Scanner;
 public class LoginHandler {
 	
 	private Connection dbConnection;
+	private int userID;
 	private Scanner scan;
 	
 	public LoginHandler(Connection c) {
@@ -14,10 +15,12 @@ public class LoginHandler {
 		this.scan = new Scanner(System.in);
 	}
 	
-	public boolean login() {
+	public int login() {
+		
+		System.out.println("\nIdentification required");
+		System.out.println("-----------------------\n");
 		
 		String storedPass = null;
-		
 		while( storedPass == null ) {
 			
 			System.out.print("Name: ");
@@ -36,11 +39,12 @@ public class LoginHandler {
 			if( storedPass != null && hash.equals(storedPass) )
 				break;
 			
-			System.out.println("Sorry, try again");
+			System.out.println("Sorry, retry");
 		}
 		
 		System.out.println("Correct password");
-		return true;
+		
+		return this.userID;
 	}
 	
 	private String retrievePassword(String name) {
@@ -50,12 +54,15 @@ public class LoginHandler {
 				
 		try {
 			
-			PreparedStatement ps = dbConnection.prepareStatement("SELECT mot_de_passe FROM projet.power_mangeurs WHERE nom=?;");
+			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.power_mangeurs WHERE nom=?;");
 			ps.setString(1, name);
 			ResultSet r = ps.executeQuery();
 			
-			if( r.next() )
-				return r.getString(1);
+			if( r.next() ) {
+				
+				this.userID = r.getInt("id_pm");
+				return r.getString("mot_de_passe");
+			}
 		}
 		catch(SQLException e) {
 			e.printStackTrace();
