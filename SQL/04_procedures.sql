@@ -197,7 +197,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE TYPE projet.liste_actions AS (date TIMESTAMP, action VARCHAR(255));
 
-CREATE FUNCTION projet.visualiser_combat(INTEGER) RETURNS SETOF projet.liste_actions AS $$
+CREATE OR REPLACE FUNCTION projet.visualiser_combat(INTEGER) RETURNS SETOF projet.liste_actions AS $$
 DECLARE
 	_id_pm			ALIAS FOR $1;
 	_id_combat		INTEGER;
@@ -208,6 +208,10 @@ DECLARE
 BEGIN
 
 	SELECT id_combat, date_debut, date_fin INTO _id_combat, _debut_combat, _fin_combat FROM projet.combats WHERE id_pm = _id_pm ORDER BY date_fin DESC LIMIT 1;
+
+	IF _id_combat IS NULL THEN
+		RETURN;
+	END IF;
 	
 	-- Retourner date début combat
 	SELECT _debut_combat, 'Début du combat' INTO _action;

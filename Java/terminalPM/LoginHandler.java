@@ -1,9 +1,20 @@
 package terminalPM;
 
+import java.math.BigInteger;
+import java.security.GeneralSecurityException;
+import java.security.InvalidParameterException;
 import java.sql.*;
 import java.util.Scanner;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+
 public class LoginHandler {
+	
+	private static final int ITERATIONS = 1000;
+	private static final String SALT = "FE26EEE87B528135";
+	private static final int KEYLENGTH = 64*8;
+	private static final String CIPHER = "PBKDF2WithHmacSHA1";
 	
 	private Connection dbConnection;
 	private int userID;
@@ -34,7 +45,7 @@ public class LoginHandler {
 			System.out.print("\nPassword: ");
 			String tempPass = scan.next();
 			
-			String hash = CryptService.hash(tempPass);
+			String hash = this.hash(tempPass);
 			
 			if( storedPass != null && hash.equals(storedPass) )
 				break;
@@ -70,5 +81,31 @@ public class LoginHandler {
 		
 		return null;
 	}
+	
+	public String hash(String s) {
+		
+		if( s == null ) throw new InvalidParameterException();
+				
+		PBEKeySpec spec = new PBEKeySpec(s.toCharArray(), SALT.getBytes(), ITERATIONS, KEYLENGTH);
+		
+		byte[] hash;
+		try {
+			hash = SecretKeyFactory.getInstance(CIPHER).generateSecret(spec).getEncoded();			
+		}
+		catch(GeneralSecurityException e) { return null; }
+		
+		return toHex( hash );
+	}
+	
+	private String toHex(byte[] array)
+    {
+        String hex = ( new BigInteger(1, array) ).toString(16);
+        int paddingLength = (array.length * 2) - hex.length();
+        
+        if(paddingLength > 0)
+        	return String.format("%0"  +paddingLength + "d", 0) + hex;
+        
+        return hex;
+    }
 
 }

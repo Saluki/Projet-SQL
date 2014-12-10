@@ -21,13 +21,7 @@ public class HistoryHandler {
 	private void launch() {
 		
 		try {
-			/*if( !rs.next() ) {
-				System.out.println("\nTu n'as fait encore aucun combat");
-				return;
-			}*/
-			
-			// RETOURNER EXCEPTION DANS PROCEDURE SI AUCUN COMBAT!
-					
+								
 			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.visualiser_combat(?)");
 			ps.setInt(1, userID);
 			ResultSet rs = ps.executeQuery();
@@ -35,15 +29,20 @@ public class HistoryHandler {
 			System.out.println("\nHistorique Dernier Combat");
 			System.out.println("-------------------------\n");
 			
-			while( rs.next() ){
-				
+			if( !rs.next() ) {
+				System.out.println("Tu n'as fait encore aucun combat");
+				return;
+			}
+			
+			do {	
 				String action = rs.getString("action");
 				String d = rs.getString("date");
 				
 				System.out.println(d+"\t"+action);
 			}
-			
-		} catch (SQLException e) { e.printStackTrace(); }
+			while( rs.next() );
+		} 
+		catch (SQLException e) { e.printStackTrace(); }
 	}
 
 }
