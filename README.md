@@ -8,35 +8,46 @@ Plan
 
 Plan	 | Semaine | Fini | Chargé 
 :--------------------------------|:-----:|:-:|:---------------
-1. DSD							| 1-3 	|   |				 
+I. DSD							| 1-5 	|   |				 
     1. Tables					| 1		| X | Badot & Dandoy 
     2. Vues						| 3		|   | Badot & Dandoy 
-    3. Procédures				| 3		|   | Badot & Dandoy 
-    4. Triggers					| 		|   | 				 
-    5. Données test				| 2		|   | 				 
-2. Application Java				| 2-5	|   | 				 
+    3. Procédures				| 3-4	|   | Dandoy			
+    4. Triggers					| 4		|   | Dandoy			
+    5. Données test				| 5		|   | 				 
+II. Application Java				| 4-5	|   | 				 
 	1. Tomiko					| 		|   | 
-		1. Inscription P-M		| 		|   | 
-		2. Ajout Archétype		| 		|   | 
-		3. Statistiques			| 		|   | 
-		4. Historique			| 		|   | 
-		5. Attribution P-U		| 		|   | 
+		a. Inscription P-M		| 		|   | 
+		b. Ajout Archétype		| 		|   | 
+		c. Statistiques			| 		|   | 
+		d. Historique			| 		|   | 
+		e. Attribution P-U		| 		|   | 
 	2. Power-mangeurs 			| 		|   | 
-		1. Activation			| 		|   | 
-			1. Débuter combat	| 		|   | 
-			2. Utiliser P-U		| 		|   | 
-			3. Conclure combat	| 		|   | 
-		2. Historique			| 		|   | 
-		3. Statistiques			| 		|   | 
-3. Rapport						| 5		|   |
+		a. Activation			| 		|   | 
+			i. Débuter combat	| 		|   | 
+			ii. Utiliser P-U		| 		|   | 
+			iii. Conclure combat	| 		|   | 
+		b. Historique			| 		|   | 
+		c. Statistiques			| 		|   | 
+III. Rapport						| 5		|   |
 	1. Code SQL					| 		|   |
 	2. Données test				| 		|   |
 	3. Code Java					| 		|   |
 	4. Justif. & explic.			| 		|   |
 	5. Conclusion				| 		|   |
 
+
+A faire
+-------
+
+- TRIGGERS
+- Extension et stats perso
+- Cryptage mdp
+- GRANT
+
 Questions
 ---------
+
+- P-U : Utilisable 1x par jour ou par 24h ?
 
 Remarques
 ---------
