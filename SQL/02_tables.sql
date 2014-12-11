@@ -1,3 +1,8 @@
+CREATE SEQUENCE projet.id_power_mangeur;
+CREATE SEQUENCE projet.id_archetype;
+CREATE SEQUENCE projet.id_combat;
+CREATE SEQUENCE projet.id_power_up;
+
 CREATE TABLE projet.power_mangeurs
 (
   id_pm            INTEGER PRIMARY KEY   DEFAULT NEXTVAL('projet.id_power_mangeur'),
@@ -23,7 +28,7 @@ CREATE TABLE projet.combats
   id_combat    INTEGER PRIMARY KEY DEFAULT NEXTVAL('projet.id_combat'),
   id_pm        INTEGER   NOT NULL REFERENCES projet.power_mangeurs (id_pm),
   id_archetype INTEGER   NOT NULL REFERENCES projet.archetypes (id_archetype),
-  date_debut   TIMESTAMP NOT NULL  DEFAULT LOCALTIMESTAMP,
+  date_debut   TIMESTAMP NOT NULL  DEFAULT LOCALTIMESTAMP CHECK (date_debut <= LOCALTIMESTAMP),
   date_fin     TIMESTAMP,
   est_gagne    BOOLEAN,
   CHECK (date_debut < date_fin)
@@ -34,7 +39,7 @@ CREATE TABLE projet.power_ups
   id_pu            INTEGER PRIMARY KEY   DEFAULT NEXTVAL('projet.id_power_up'),
   nom              VARCHAR(100) NOT NULL CHECK (nom <> ''),
   id_pm            INTEGER      NOT NULL REFERENCES projet.power_mangeurs (id_pm),
-  date_attribution TIMESTAMP    NOT NULL DEFAULT LOCALTIMESTAMP,
+  date_attribution TIMESTAMP    NOT NULL DEFAULT LOCALTIMESTAMP CHECK (date_attribution <= LOCALTIMESTAMP),
   facteur          INTEGER      NOT NULL CHECK (facteur > 0),
   UNIQUE (nom, id_pm)
 );
@@ -43,7 +48,7 @@ CREATE TABLE projet.utilisations
 (
   id_combat        INTEGER   NOT NULL REFERENCES projet.combats (id_combat),
   id_pu            INTEGER   NOT NULL REFERENCES projet.power_ups (id_pu),
-  date_utilisation TIMESTAMP NOT NULL DEFAULT LOCALTIMESTAMP,
+  date_utilisation TIMESTAMP NOT NULL DEFAULT LOCALTIMESTAMP CHECK (date_utilisation <= LOCALTIMESTAMP),
   PRIMARY KEY (id_combat, id_pu)
 );
 

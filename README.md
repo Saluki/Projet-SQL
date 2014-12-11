@@ -35,6 +35,15 @@ III. Rapport						| 5		|   |
 	4. Justif. & explic.			| 		|   |
 	5. Conclusion				| 		|   |
 
+
+A faire
+-------
+
+- TRIGGERS
+- Extension et stats perso
+- Cryptage mdp
+- GRANT
+
 Questions
 ---------
 
