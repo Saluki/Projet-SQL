@@ -119,21 +119,6 @@ CREATE VIEW projet.monstre_au_hasard AS
 	ORDER BY RANDOM()
 	LIMIT 1;
 
--- Historique dernier combat
-
-CREATE VIEW projet.historique_dernier_combat AS
-  SELECT
-    c.id_pm,
-    pu.nom AS "nom_pu",
-    u.date_utilisation,
-    c.date_debut,
-    c.date_fin
-  FROM projet.combats c
-    LEFT JOIN projet.utilisations u ON c.id_combat = u.id_combat
-    LEFT JOIN projet.power_ups pu ON u.id_pu = pu.id_pu
-  ORDER BY c.date_debut DESC
-  LIMIT 1;
-
 -- Nombre monstres combattus/gagnés depuis début/année
 
 CREATE VIEW projet.statistiques_combats AS

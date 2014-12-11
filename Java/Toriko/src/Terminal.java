@@ -159,6 +159,7 @@ public class Terminal {
                 System.out.println("Problème d'input.");
                 return;
             }
+            mdp = CryptService.hash(mdp);
             statement.setString(3, mdp);
 
         } catch (SQLException e) {
