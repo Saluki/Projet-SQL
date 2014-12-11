@@ -7,7 +7,7 @@ DECLARE
 BEGIN
 
 	SELECT c.date_debut INTO _dernier_combat FROM projet.combats c ORDER BY c.date_debut DESC LIMIT 1;
-	IF (EXTRACT(YEAR FROM _dernier_combat) < EXTRACT(YEAR FROM NEW.date_debut)) THEN
+	IF (_dernier_combat IS NOT NULL AND EXTRACT(YEAR FROM _dernier_combat) < EXTRACT(YEAR FROM NEW.date_debut)) THEN
 		UPDATE projet.statistiques SET nb_combats_annee = 0, nb_victoires_annee = 0;
 	END IF;
 
@@ -18,6 +18,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER verifier_stats
   BEFORE INSERT ON projet.combats
+  FOR EACH ROW
   EXECUTE PROCEDURE projet.verifier_stats();
 
 -- AFTER INSERT combats
@@ -49,7 +50,7 @@ CREATE TRIGGER ajouter_combat
 CREATE FUNCTION projet.ajouter_victoire() RETURNS TRIGGER AS $$
   BEGIN
 
-    UPDATE projet.statistiques SET nb_victoires_total = nb_victoires_total+1, nb_victoires_annee = nb_victoires_annee+1 WHERE id_pm = NEW.id_pm AND id_archetype = NEW.id_arch;
+    UPDATE projet.statistiques SET nb_victoires_total = nb_victoires_total+1, nb_victoires_annee = nb_victoires_annee+1 WHERE id_pm = NEW.id_pm AND id_archetype = NEW.id_archetype;
 
     RETURN NULL;
 
