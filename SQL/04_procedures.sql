@@ -103,13 +103,14 @@ $$ LANGUAGE plpgsql;
 
 -- [X] Conclure combat
 
-CREATE FUNCTION projet.conclure_combat(INTEGER) RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION projet.conclure_combat(INTEGER,BOOLEAN) RETURNS BOOLEAN AS $$
 DECLARE
 	_id_pm			ALIAS FOR $1;
-	_puissance_pm	INTEGER;
-	_vie				INTEGER;
-	_id_arch			INTEGER;
-	_puissance_arch	INTEGER;
+	_force_defaite		ALIAS FOR $2;
+	_puissance_pm		INTEGER;
+	_vie			INTEGER;
+	_id_arch		INTEGER;
+	_puissance_arch		INTEGER;
 	_id_combat		INTEGER;
 	_est_gagne		BOOLEAN;
 BEGIN
@@ -126,7 +127,11 @@ BEGIN
 		RAISE 'Pas de combat en cours.';
 	END IF;
 
-	_est_gagne:=(_puissance_pm>_puissance_arch);
+	IF (_force_defaite = TRUE) THEN
+		_est_gagne:=FALSE;
+	ELSE
+		_est_gagne:=(_puissance_pm>_puissance_arch);
+	END IF;
 
 	-- Mettre à jour issue combat
 	UPDATE projet.combats SET date_fin = LOCALTIMESTAMP, est_gagne = _est_gagne WHERE id_combat = _id_combat;
@@ -135,23 +140,6 @@ BEGIN
 	IF (_puissance_pm > 30) THEN
 		UPDATE projet.power_mangeurs SET puissance = 30 WHERE id_pm = _id_pm;
 	END IF;
-
-/*
-	IF (_est_gagne) THEN
-
-		-- Incrémenter stats P-M
-		UPDATE projet.statistiques SET nb_victoires_total = nb_victoires_total+1, nb_victoires_annee = nb_victoires_annee+1 WHERE id_pm = _id_pm AND id_archetype = _id_arch;
-
-	ELSE
-
-		-- Décrémenter vie P-M
-		UPDATE projet.power_mangeurs SET vie = vie-1 WHERE id_pm = _id_pm RETURNING vie INTO _vie;
-		IF (_vie = 0) THEN
-			UPDATE projet.power_mangeurs SET date_deces = LOCALTIMESTAMP WHERE id_pm = _id_pm;
-		END IF;
-
-	END IF;
-*/
 
 	RETURN _est_gagne;
 
