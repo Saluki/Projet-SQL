@@ -196,6 +196,53 @@ $$ LANGUAGE plpgsql;
 
 -- -------------------------------------------------------------------------------------------------
 
+-- [X] Encaisser un prix au JackPot
+
+CREATE OR REPLACE FUNCTION projet.encaisser_jackpot(INTEGER) RETURNS INTEGER AS $$
+DECLARE
+	_id_pm		ALIAS FOR $1;
+	_vie		INTEGER;
+	_date_fin	TIMESTAMP;
+BEGIN
+
+	-- Selectionner le nombre de vies du PM
+	SELECT vie INTO _vie FROM projet.power_mangeurs WHERE id_pm = _id_pm;
+
+	-- Controle que le PM existe
+	IF _vie IS NULL THEN
+		RAISE 'Power Mangeur introuvable';
+	END IF;
+
+	-- Controle que la vie ne soit pas au maximum
+	IF _vie>=10 THEN
+		RAISE 'Vie est au maximum';
+	END IF;
+
+	-- Choper fin dernier combat
+	SELECT c.date_fin INTO _date_fin FROM projet.combats c WHERE c.id_pm = _id_pm ORDER BY date_debut DESC LIMIT 1;
+
+	-- Controle que combat soit bien termine
+	IF _date_fin IS NULL THEN
+		RAISE 'Combat en cours';
+	END IF;
+
+	-- Controle timing
+	IF (LOCALTIMESTAMP - _date_fin) > (INTERVAL '5 minutes') THEN 
+		RAISE 'JackPot seulement valable 5 minutes apres une fin de combat';
+	END IF;
+	
+	-- Incremente les vies
+	_vie := _vie + 1;
+	UPDATE projet.power_mangeurs SET vie = _vie WHERE id_pm = _id_pm;
+
+	-- Retourne le nombre de vies actuel
+	RETURN _vie;
+
+END;
+$$ LANGUAGE plpgsql;
+
+----------------------------------------------------------------------------------------------------
+
 -- [X] Visualiser historique dernier combat
 
 CREATE TYPE projet.liste_actions AS (date TIMESTAMP, action VARCHAR(255));
