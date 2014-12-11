@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Lance un terminal pour les Power Mangeurs
@@ -147,6 +148,7 @@ public class App {
 		System.out.println("#1\tPOWER MANGEUR ACTIVATION!");
 		System.out.println("#2\tHistorique dernier combat");
 		System.out.println("#3\tStatistiques");
+		System.out.println("#4\tJackpot");
 		System.out.println("#0\tQuitter");
 		
 		System.out.print("\nChoix: ");
@@ -178,6 +180,9 @@ public class App {
 		}
 		else if( action==3 ) {
 			new StatsHandler(dbConnection, userID);
+		}
+		else if( action==4 ) {
+			new JackpotHandler(dbConnection, userID);
 		}
 	}
 	

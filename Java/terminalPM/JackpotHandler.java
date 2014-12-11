@@ -28,16 +28,18 @@ public class JackpotHandler {
 	
 		String s1 = generateRandomSymbol(), s2 = generateRandomSymbol(), s3 = generateRandomSymbol();
 		
-		System.out.println("\nGenerating symbols...\n");
+		System.out.println("\n[GENERATION DES SYMBOLES]\n");
 		try {
-			TimeUnit.SECONDS.sleep(2);
+			TimeUnit.SECONDS.sleep(1);
 			System.out.print(s1);
 			
-			TimeUnit.SECONDS.sleep(2);
+			TimeUnit.SECONDS.sleep(1);
 			System.out.print(s2);
 			
-			TimeUnit.SECONDS.sleep(2);
+			TimeUnit.SECONDS.sleep(1);
 			System.out.print(s3);
+			
+			TimeUnit.SECONDS.sleep(1);
 		}
 		catch (InterruptedException e) {
 			e.printStackTrace();
@@ -45,23 +47,33 @@ public class JackpotHandler {
 		System.out.println("\n");
 		
 		if( !s1.equals(s2) || !s1.equals(s3) ) {
-			System.out.println("Pas de chance, ...");
+			System.out.println("Pas de chance...");
 			return;
 		}
 		
+		int currentLives = collectJackpot();
 		
+		if(currentLives != -1) {
+			
+			for(int i=0; i<currentLives; i++) 
+				System.out.print(LoginHandler.HEARTICON +" ");
+		}
+		System.out.println("");
 	}
 	
 	private int collectJackpot() {
 		
 		try {
 			
-			PreparedStatement ps = dbConnection.prepareStatement("");
+			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.encaisser_jackpot(?);");
 			ps.setInt(1, userID);
 			ResultSet rs = ps.executeQuery();
+			rs.next();
+			
+			return rs.getInt(1);
 		}
 		catch(SQLException e) {
-			e.printStackTrace();
+			System.out.println(e.getMessage());
 		}
 		
 		return -1;

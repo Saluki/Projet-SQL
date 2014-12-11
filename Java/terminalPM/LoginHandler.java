@@ -8,6 +8,8 @@ import java.util.Scanner;
 
 public class LoginHandler {
 	
+	public static final String HEARTICON = "\u2764";
+	
 	private Connection dbConnection;
 	private Scanner scan;
 	
@@ -51,7 +53,11 @@ public class LoginHandler {
 		}
 		
 		System.out.println("Mot de passe correct");
-		System.out.println("\nTu as actuellement "+lives+" vies");
+		
+		System.out.print("\nVies : ");
+		for(int i=0; i<this.lives; i++)
+			System.out.print(HEARTICON +" ");
+		System.out.println("");
 		
 		return this.userID;
 	}

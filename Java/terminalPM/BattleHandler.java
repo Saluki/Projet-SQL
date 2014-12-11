@@ -7,10 +7,9 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.Scanner;
 
-// PROBLEME AVEC LE PU
 public class BattleHandler {
 	
-	private static final int BATTLETIME = 1;
+	private static final int BATTLETIME = 10;
 	
 	private static Scanner scan = new Scanner(System.in);
 	
@@ -57,7 +56,7 @@ public class BattleHandler {
 			if( !rs.next() )
 				return;
 			
-			this.beginTimestamp = (rs.getDate("date_debut")).getTime();
+			this.beginTimestamp = (rs.getTimestamp("date_debut")).getTime();
 			this.monsterID = rs.getInt("id_archetype");
 		}
 		catch(SQLException e) { 
@@ -115,7 +114,7 @@ public class BattleHandler {
 			this.monsterName = rs.getString("nom");
 			this.monsterPower = rs.getInt("puissance");
 			
-			System.out.println("\nTu vas combattre...\nUn monstre "+monsterName+" avec puissance "+monsterPower+"!");
+			System.out.println("\nLancement d'un combat contre...\nun monstre "+monsterName+" avec puissance "+monsterPower+"!");
 		}
 		catch(SQLException e) { 
 			
@@ -212,7 +211,7 @@ public class BattleHandler {
 		}
 		catch(SQLException e) {
 			
-			e.printStackTrace();
+			System.out.println("\n"+ e.getMessage() );
 		}
 	}
 	

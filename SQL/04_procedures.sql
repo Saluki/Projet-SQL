@@ -150,6 +150,7 @@ BEGIN
 		
 	END IF;
 	
+
 	RETURN _est_gagne;
 
 END;
