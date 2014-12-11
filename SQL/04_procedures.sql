@@ -175,6 +175,9 @@ BEGIN
 	-- Vérifier que P-U n'a pas déjà été utilisé aujourd'hui
 	SELECT date_utilisation INTO _derniere_utilisation FROM projet.utilisations WHERE id_pu = _id_pu ORDER BY date_utilisation DESC LIMIT 1;
 	
+	-- Selectionner le facteur du Power Up
+	SELECT facteur INTO _facteur FROM projet.power_ups WHERE id_pu = _id_pu;
+	    
 	-- 1x/jour : date_trunc('day', _derniere_utilisation) < date_trunc('day', NOW())
 	-- 1x/24h : (NOW()-_derniere_utilisation) > interval '1 day'
 	IF (_derniere_utilisation IS NULL OR FALSE) THEN
