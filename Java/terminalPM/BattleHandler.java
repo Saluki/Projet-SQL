@@ -202,8 +202,13 @@ public class BattleHandler {
 				
 				System.out.println("#"+ID+"\t"+name);
 			}
+			System.out.println("#0\tAnnuler");
 			
+			System.out.println("\nChoix : ");
 			int choice = scan.nextInt();
+			
+			if( choice == 0 )
+				return;
 			
 			ps = dbConnection.prepareStatement("SELECT * FROM projet.utiliser_pu(?, ?)");
 			ps.setInt(1, userID);

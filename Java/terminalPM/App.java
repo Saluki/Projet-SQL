@@ -117,13 +117,12 @@ public class App {
 			ps.setInt(1, this.userID);
 			ResultSet rs = ps.executeQuery();
 			
-			if( rs.next() ) {
-				System.out.println("\nRecuperation du combat precedent en cours...");
-				new BattleHandler(dbConnection, userID, rs.getInt("id_combat") );
-			} 
-			else {
-				System.out.println("\n[INFO] Aucun combat ouvert");
-			}
+			if( !rs.next() )
+				return;
+			
+			System.out.println("\nRecuperation du combat precedent en cours...");
+			new BattleHandler(dbConnection, userID, rs.getInt("id_combat") );
+			
 			
 		} 
 		catch (SQLException e) { 
