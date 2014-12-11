@@ -1,6 +1,9 @@
 package terminalPM;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Scanner;
 
 public class LoginHandler {
@@ -8,60 +11,72 @@ public class LoginHandler {
 	private Connection dbConnection;
 	private Scanner scan;
 	
+	private int userID;
+	private String hashedPassword;
+	private int lives;
+	
 	public LoginHandler(Connection c) {
 		
 		this.dbConnection = c;
 		this.scan = new Scanner(System.in);
 	}
 	
-	public boolean login() {
+	public int login() {
 		
-		String storedPass = null;
+		System.out.println("\nIdentification requise");
+		System.out.println("----------------------\n");
 		
-		while( storedPass == null ) {
+		while( this.userID == 0 || this.lives <= 0 ) {
 			
-			System.out.print("Name: ");
+			System.out.print("Nom: ");
 			String name = scan.next();
 			
-			storedPass = retrievePassword(name);
+			retrieveUserDate(name);
+			
+			if( this.userID == 0 || this.lives == 0 )
+				System.out.println("Desole, ce Power Mangeur est mort ou n'existe pas\n");
 		}
 		
 		while(true) {
 			
-			System.out.print("\nPassword: ");
+			System.out.print("\nMot de passe: ");
 			String tempPass = scan.next();
 			
 			String hash = CryptService.hash(tempPass);
 			
-			if( storedPass != null && hash.equals(storedPass) )
+			if( hashedPassword != null && hash.equals(hashedPassword) )
 				break;
 			
-			System.out.println("Sorry, try again");
+			System.out.println("Desole, mot de passe incorrect");
 		}
 		
-		System.out.println("Correct password");
-		return true;
+		System.out.println("Mot de passe correct");
+		System.out.println("\nTu as actuellement "+lives+" vies");
+		
+		return this.userID;
 	}
 	
-	private String retrievePassword(String name) {
+	private void retrieveUserDate(String name) {
 		
 		if( name == null || name == "" )
-			return null;
+			return;
 				
 		try {
 			
-			PreparedStatement ps = dbConnection.prepareStatement("SELECT mot_de_passe FROM projet.power_mangeurs WHERE nom=?;");
+			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.power_mangeurs WHERE nom=?;");
 			ps.setString(1, name);
 			ResultSet r = ps.executeQuery();
 			
-			if( r.next() )
-				return r.getString(1);
+			if( r.next() ) {
+				
+				this.userID = r.getInt("id_pm");
+				this.hashedPassword = r.getString("mot_de_passe");
+				this.lives = r.getInt("vie");
+			}
 		}
 		catch(SQLException e) {
 			e.printStackTrace();
 		}
-		
-		return null;
 	}
 
 }

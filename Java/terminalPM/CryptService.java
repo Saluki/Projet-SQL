@@ -3,18 +3,17 @@ package terminalPM;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidParameterException;
-import java.util.Scanner;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
 public class CryptService {
-		
+	
 	private static final int ITERATIONS = 1000;
 	private static final String SALT = "FE26EEE87B528135";
 	private static final int KEYLENGTH = 64*8;
 	private static final String CIPHER = "PBKDF2WithHmacSHA1";
-	
+
 	public static String hash(String s) {
 		
 		if( s == null ) throw new InvalidParameterException();
@@ -40,14 +39,5 @@ public class CryptService {
         
         return hex;
     }
-	
-	public static void main(String[] args){
-		
-		System.out.println("Enter text to crypt:");
-		Scanner scan = new Scanner(System.in);
-		
-		System.out.println( CryptService.hash(scan.next()) );
-		
-		scan.close();
-	}
+
 }

@@ -1,11 +1,11 @@
 DROP SCHEMA IF EXISTS projet CASCADE;
 
-CREATE SCHEMA projet;
-
-CREATE SEQUENCE projet.id_power_mangeur;
+CREATE SCHEMA projet;CREATE SEQUENCE projet.id_power_mangeur;
 CREATE SEQUENCE projet.id_archetype;
 CREATE SEQUENCE projet.id_combat;
-CREATE SEQUENCE projet.id_power_up;CREATE TABLE projet.power_mangeurs
+CREATE SEQUENCE projet.id_power_up;
+
+CREATE TABLE projet.power_mangeurs
 (
   id_pm            INTEGER PRIMARY KEY   DEFAULT NEXTVAL('projet.id_power_mangeur'),
   nom              VARCHAR(100) NOT NULL UNIQUE CHECK (length(btrim(nom)) >= 3),
@@ -312,6 +312,7 @@ DECLARE
 	_id_pm					      ALIAS FOR $1;
 	_id_pu					      ALIAS FOR $2;
 	_id_combat				    INTEGER;
+	_facteur							INTEGER;
 	_derniere_utilisation	TIMESTAMP;
 BEGIN
 
@@ -328,6 +329,9 @@ BEGIN
 	-- 1x/24h : (NOW()-_derniere_utilisation) > interval '1 day'
 	IF (_derniere_utilisation IS NULL OR FALSE) THEN
 
+		-- Selectionner le facteur du Power Up
+    SELECT facteur INTO _facteur FROM projet.power_ups WHERE id_pu = _id_pu;
+
 		INSERT INTO projet.utilisations (id_combat, id_pu) VALUES (_id_combat, _id_pu);
 		UPDATE projet.power_mangeurs SET puissance = puissance+puissance*_facteur/100 WHERE id_pm = _id_pm;
 
@@ -342,11 +346,58 @@ $$ LANGUAGE plpgsql;
 
 -- -------------------------------------------------------------------------------------------------
 
+-- [X] Encaisser un prix au JackPot
+
+CREATE OR REPLACE FUNCTION projet.encaisser_jackpot(INTEGER) RETURNS INTEGER AS $$
+DECLARE
+	_id_pm		ALIAS FOR $1;
+	_vie		INTEGER;
+	_date_fin	TIMESTAMP;
+BEGIN
+
+	-- Selectionner le nombre de vies du PM
+	SELECT vie INTO _vie FROM projet.power_mangeurs WHERE id_pm = _id_pm;
+
+	-- Controle que le PM existe
+	IF _vie IS NULL THEN
+		RAISE 'Power Mangeur introuvable';
+	END IF;
+
+	-- Controle que la vie ne soit pas au maximum
+	IF _vie>=10 THEN
+		RAISE 'Vie est au maximum';
+	END IF;
+
+	-- Choper fin dernier combat
+	SELECT c.date_fin INTO _date_fin FROM projet.combats c WHERE c.id_pm = _id_pm ORDER BY date_debut DESC LIMIT 1;
+
+	-- Controle que combat soit bien termine
+	IF _date_fin IS NULL THEN
+		RAISE 'Combat en cours';
+	END IF;
+
+	-- Controle timing
+	IF (LOCALTIMESTAMP - _date_fin) > (INTERVAL '5 minutes') THEN 
+		RAISE 'JackPot seulement valable 5 minutes apres une fin de combat';
+	END IF;
+	
+	-- Incremente les vies
+	_vie := _vie + 1;
+	UPDATE projet.power_mangeurs SET vie = _vie WHERE id_pm = _id_pm;
+
+	-- Retourne le nombre de vies actuel
+	RETURN _vie;
+
+END;
+$$ LANGUAGE plpgsql;
+
+----------------------------------------------------------------------------------------------------
+
 -- [X] Visualiser historique dernier combat
 
 CREATE TYPE projet.liste_actions AS (date TIMESTAMP, action VARCHAR(255));
 
-CREATE FUNCTION projet.visualiser_combat(INTEGER) RETURNS SETOF projet.liste_actions AS $$
+CREATE OR REPLACE FUNCTION projet.visualiser_combat(INTEGER) RETURNS SETOF projet.liste_actions AS $$
 DECLARE
 	_id_pm			ALIAS FOR $1;
 	_id_combat		INTEGER;
@@ -358,6 +409,10 @@ BEGIN
 
 	SELECT id_combat, date_debut, date_fin INTO _id_combat, _debut_combat, _fin_combat FROM projet.combats WHERE id_pm = _id_pm ORDER BY date_fin DESC LIMIT 1;
 
+	IF _id_combat IS NULL THEN
+		RETURN;
+	END IF;
+	
 	-- Retourner date début combat
 	SELECT _debut_combat, 'Début du combat' INTO _action;
 	RETURN NEXT _action;
