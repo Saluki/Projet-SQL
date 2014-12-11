@@ -41,6 +41,7 @@ public class Terminal {
             statements.add(db.prepareStatement("SELECT * FROM projet.classement_pm;"));
             statements.add(db.prepareStatement("SELECT * FROM projet.liste_decedes"));
             statements.add(db.prepareStatement("SELECT * FROM projet.historique_combats WHERE nom_pm = ? AND date_debut BETWEEN ? AND ?"));
+            statements.add(db.prepareStatement("SELECT * FROM projet.historique_combats WHERE nom_archetype = ? AND date_debut BETWEEN ? AND ?"));
         } catch (SQLException e) {
             System.out.println("Problème de requête préparée !");
             e.printStackTrace();
@@ -99,7 +100,10 @@ public class Terminal {
                     liste_deces();
                     break;
                 case 6:
-                    historique_combats();
+                    historique_pm();
+                    break;
+                case 7:
+                    historique_archetype();
                     break;
                 default:
                     System.out.println("Ceci n'est pas une commande valide.");
@@ -120,6 +124,7 @@ public class Terminal {
         System.out.println("| 4 | Classement des Power Mangeurs                 |");
         System.out.println("| 5 | Liste des Power Mangeurs décédés cette année  |");
         System.out.println("| 6 | Historique des combats d'un Power Mangeur     |");
+        System.out.println("| 7 | Historique des combats d'un archétype         |");
         System.out.println(" ---------------------------------------------------");
         System.out.println("| 0 | Quitter l'application                         |");
         System.out.println(" ---------------------------------------------------");
@@ -333,14 +338,14 @@ public class Terminal {
 
     }
 
-    private static void historique_combats () {
+    private static void historique_pm () {
 
         String nom_pm, nom_archetype, date_debut, date_fin, victoire;
         Date debut, fin;
         PreparedStatement statement = statements.get(choix);
 
-        System.out.println("\nHistorique des combats");
-        System.out.println("----------------------\n");
+        System.out.println("\nHistorique des combats d'un Power Mangeur");
+        System.out.println("-----------------------------------------\n");
 
         try {
             System.out.print("Nom du Power Mangeur : ");
@@ -408,6 +413,90 @@ public class Terminal {
                     System.out.println(" | "+debut+" | "+fin+" | "+victoire+" |");
                 } while (result.next());
                 System.out.println(" --------------------------------------------------------- ");
+            }
+            else
+                System.out.println("Aucun combat trouvé.");
+        } catch (SQLException e) {
+            System.out.println("Problème avec la requête.");
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private static void historique_archetype () {
+
+        String nom_pm, nom_archetype, date_debut, date_fin, victoire;
+        Date debut, fin;
+        PreparedStatement statement = statements.get(choix);
+
+        System.out.println("\nHistorique des combats d'un archétype");
+        System.out.println("-------------------------------------\n");
+
+        try {
+            System.out.print("Nom de l'archétype : ");
+            try {
+                nom_archetype = scan.next();
+            } catch (Exception e) {
+                System.out.println("Problème d'input.");
+                return;
+            }
+            statement.setString(1, nom_archetype);
+
+            while (true) {
+                System.out.print("Début de période : ");
+                try {
+                    date_debut = scan.next();
+                    debut = Date.valueOf(date_debut);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("La date doit être au format \"YYY-[M]M-[D]D\".");
+                    continue;
+                } catch (Exception e) {
+                    System.out.println("Problème d'input.");
+                    return;
+                }
+                statement.setDate(2, debut);
+                break;
+            }
+
+            while (true) {
+                System.out.print("Fin de période : ");
+                try {
+                    date_fin = scan.next();
+                    fin = Date.valueOf(date_fin);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("La date doit être au format \"YYY-[M]M-[D]D\".");
+                    continue;
+                } catch (Exception e) {
+                    System.out.println("Problème d'input.");
+                    return;
+                }
+                statement.setDate(3, fin);
+                break;
+            }
+
+            System.out.println();
+        } catch (SQLException e) {
+            System.out.println("Erreur avec la base de données.");
+            System.exit(1);
+        }
+
+        try {
+            ResultSet result = statement.executeQuery();
+            if (result.next()) {
+                System.out.println(" ------------------------------------------------------ ");
+                System.out.println("|  Power Mangeur  | Date début |  Date fin  |  Issue   |");
+                System.out.println(" ------------------------------------------------------ ");
+                do {
+                    nom_pm = result.getString(1);
+                    debut = result.getDate(3);
+                    fin = result.getDate(4);
+                    victoire = result.getBoolean(5) ? "Défaite " : "Victoire";
+
+                    System.out.print("| "+nom_pm);
+                    for (int i = nom_pm.length(); i < 15; i++)
+                        System.out.print(" ");
+                    System.out.println(" | "+debut+" | "+fin+" | "+victoire+" |");
+                } while (result.next());
+                System.out.println(" ------------------------------------------------------ ");
             }
             else
                 System.out.println("Aucun combat trouvé.");
