@@ -1,24 +1,19 @@
 package terminalPM;
 
-import java.math.BigInteger;
-import java.security.GeneralSecurityException;
-import java.security.InvalidParameterException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Scanner;
-
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
 
 public class LoginHandler {
 	
-	private static final int ITERATIONS = 1000;
-	private static final String SALT = "FE26EEE87B528135";
-	private static final int KEYLENGTH = 64*8;
-	private static final String CIPHER = "PBKDF2WithHmacSHA1";
-	
 	private Connection dbConnection;
-	private int userID;
 	private Scanner scan;
+	
+	private int userID;
+	private String hashedPassword;
+	private int lives;
 	
 	public LoginHandler(Connection c) {
 		
@@ -28,40 +23,43 @@ public class LoginHandler {
 	
 	public int login() {
 		
-		System.out.println("\nIdentification required");
-		System.out.println("-----------------------\n");
+		System.out.println("\nIdentification requise");
+		System.out.println("----------------------\n");
 		
-		String storedPass = null;
-		while( storedPass == null ) {
+		while( this.userID == 0 || this.lives <= 0 ) {
 			
-			System.out.print("Name: ");
+			System.out.print("Nom: ");
 			String name = scan.next();
 			
-			storedPass = retrievePassword(name);
+			retrieveUserDate(name);
+			
+			if( this.userID == 0 || this.lives == 0 )
+				System.out.println("Desole, ce Power Mangeur est mort ou n'existe pas\n");
 		}
 		
 		while(true) {
 			
-			System.out.print("\nPassword: ");
+			System.out.print("\nMot de passe: ");
 			String tempPass = scan.next();
 			
-			String hash = this.hash(tempPass);
+			String hash = CryptService.hash(tempPass);
 			
-			if( storedPass != null && hash.equals(storedPass) )
+			if( hashedPassword != null && hash.equals(hashedPassword) )
 				break;
 			
-			System.out.println("Sorry, retry");
+			System.out.println("Desole, mot de passe incorrect");
 		}
 		
-		System.out.println("Correct password");
+		System.out.println("Mot de passe correct");
+		System.out.println("\nTu as actuellement "+lives+" vies");
 		
 		return this.userID;
 	}
 	
-	private String retrievePassword(String name) {
+	private void retrieveUserDate(String name) {
 		
 		if( name == null || name == "" )
-			return null;
+			return;
 				
 		try {
 			
@@ -72,40 +70,13 @@ public class LoginHandler {
 			if( r.next() ) {
 				
 				this.userID = r.getInt("id_pm");
-				return r.getString("mot_de_passe");
+				this.hashedPassword = r.getString("mot_de_passe");
+				this.lives = r.getInt("vie");
 			}
 		}
 		catch(SQLException e) {
 			e.printStackTrace();
 		}
-		
-		return null;
 	}
-	
-	public String hash(String s) {
-		
-		if( s == null ) throw new InvalidParameterException();
-				
-		PBEKeySpec spec = new PBEKeySpec(s.toCharArray(), SALT.getBytes(), ITERATIONS, KEYLENGTH);
-		
-		byte[] hash;
-		try {
-			hash = SecretKeyFactory.getInstance(CIPHER).generateSecret(spec).getEncoded();			
-		}
-		catch(GeneralSecurityException e) { return null; }
-		
-		return toHex( hash );
-	}
-	
-	private String toHex(byte[] array)
-    {
-        String hex = ( new BigInteger(1, array) ).toString(16);
-        int paddingLength = (array.length * 2) - hex.length();
-        
-        if(paddingLength > 0)
-        	return String.format("%0"  +paddingLength + "d", 0) + hex;
-        
-        return hex;
-    }
 
 }

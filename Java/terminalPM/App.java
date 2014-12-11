@@ -47,15 +47,21 @@ public class App {
 		
 		userID = ( new LoginHandler(dbConnection) ).login();
 		
-		restartBattle();
-		
-		int selectedAction = showMenu();
-		while( selectedAction != 0 ) {
+		try {
+			restartBattle();
 			
-			executeAction(selectedAction);
-			selectedAction = showMenu();
+			int selectedAction = showMenu();
+			while( selectedAction != 0 ) {
+				
+				executeAction(selectedAction);
+				selectedAction = showMenu();
+			}
 		}
-		
+		catch(DeadException e) {
+			System.out.println("\nDesole, tu viens de mourir...");
+			System.out.println("Tu ne pourras donc plus te connecter a ce terminal.");
+		}
+
 		closeApp();
 	}
 
@@ -102,7 +108,7 @@ public class App {
 	 * 
 	 * @return	void
 	 */
-	private void restartBattle() {
+	private void restartBattle() throws DeadException {
 		
 		try {
 			
@@ -110,12 +116,18 @@ public class App {
 			ps.setInt(1, this.userID);
 			ResultSet rs = ps.executeQuery();
 			
-			if( rs.next() )
-				new BattleHandler(dbConnection, rs.getInt("id_combat") );
-			else
+			if( rs.next() ) {
+				System.out.println("\nRecuperation du combat precedent en cours...");
+				new BattleHandler(dbConnection, userID, rs.getInt("id_combat") );
+			} 
+			else {
 				System.out.println("\n[INFO] Aucun combat ouvert");
+			}
 			
-		} catch (SQLException e) { e.printStackTrace(); }
+		} 
+		catch (SQLException e) { 
+			e.printStackTrace(); 
+		}
 	}
 	
 	/**
@@ -154,17 +166,18 @@ public class App {
 	 * 
 	 * @param	action	Un numéro correspondant a une action
 	 * @return	void
+	 * @throws	DeadException 
 	 */
-	private void executeAction(int action) {
+	private void executeAction(int action) throws DeadException {
 		
 		if( action==1 ) {
-			new BattleHandler(dbConnection);
+			new BattleHandler(dbConnection, userID);
 		}
 		else if( action==2 ) {
 			new HistoryHandler(dbConnection, userID);
 		}
 		else if( action==3 ) {
-			new StatsHandler(dbConnection);
+			new StatsHandler(dbConnection, userID);
 		}
 	}
 	
