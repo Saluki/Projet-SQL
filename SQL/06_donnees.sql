@@ -34,14 +34,21 @@ INSERT INTO projet.power_ups (nom, id_pm, date_attribution, facteur) VALUES
 
 -- Combats
 
-INSERT INTO projet.combats (id_pm, id_archetype, date_debut, date_fin, est_gagne) VALUES
-  (2, 3, DEFAULT, NULL, NULL),
-  (3, 4, '2014-11-30 20:17:01', '2014-11-30 20:22:35', TRUE),
-  (3, 4, '2014-10-15 15:31:44', '2014-10-15 15:39:26', TRUE),
-  (3, 4, '2014-10-15 18:14:17', '2014-10-15 18:16:43', FALSE),
-  (3, 5, '2014-10-17 10:09:36', '2014-10-17 10:13:34', TRUE),
-  (3, 5, '2014-10-18 06:36:21', '2014-10-18 06:46:21', FALSE),
-  (3, 1, '2014-10-29 14:50:13', '2014-10-29 14:59:20', TRUE);
+INSERT INTO projet.combats (id_pm, id_archetype, date_debut) VALUES
+  (2, 3, DEFAULT),
+  (3, 4, '2014-11-30 20:17:01'),
+  (3, 4, '2014-10-15 15:31:44'),
+  (3, 4, '2014-10-15 18:14:17'),
+  (3, 5, '2014-10-17 10:09:36'),
+  (3, 5, '2014-10-18 06:36:21'),
+  (3, 1, '2014-10-29 14:50:13');
+
+UPDATE projet.combats SET date_fin = '2014-11-30 20:22:35', est_gagne = TRUE WHERE id_combat = 2;
+UPDATE projet.combats SET date_fin = '2014-10-15 15:39:26', est_gagne = TRUE WHERE id_combat = 3;
+UPDATE projet.combats SET date_fin = '2014-10-15 18:16:43', est_gagne = FALSE WHERE id_combat = 4;
+UPDATE projet.combats SET date_fin = '2014-10-17 10:13:34', est_gagne = TRUE WHERE id_combat = 5;
+UPDATE projet.combats SET date_fin = '2014-10-18 06:46:21', est_gagne = FALSE WHERE id_combat = 6;
+UPDATE projet.combats SET date_fin = '2014-10-29 14:59:20', est_gagne = TRUE WHERE id_combat = 7;
 
 -- Utilisations
 
