@@ -7,10 +7,10 @@
 
 CREATE FUNCTION projet.inscrire_pm(VARCHAR(100), CHAR(6), VARCHAR(150)) RETURNS INTEGER AS $$
 DECLARE
-	_nom 		ALIAS FOR $1;
-	_couleur 	ALIAS FOR $2;
-	_mdp 		ALIAS FOR $3;
-	_id			INTEGER;
+  _nom      ALIAS FOR $1;
+  _couleur  ALIAS FOR $2;
+  _mdp      ALIAS FOR $3;
+  _id       INTEGER;
 BEGIN
 
 	INSERT INTO projet.power_mangeurs (nom, couleur, mot_de_passe) VALUES (_nom, _couleur, _mdp) RETURNING id_pm INTO _id;
@@ -26,9 +26,9 @@ $$ LANGUAGE plpgsql;
 
 CREATE FUNCTION projet.ajouter_archetype(VARCHAR(100), INTEGER) RETURNS INTEGER AS $$
 DECLARE
-	_nom			ALIAS FOR $1;
+	_nom			  ALIAS FOR $1;
 	_puissance 	ALIAS FOR $2;
-	_id			INTEGER;
+	_id			    INTEGER;
 BEGIN
 
 	INSERT INTO projet.archetypes (nom, puissance) VALUES (_nom, _puissance) RETURNING id_archetype INTO _id;
@@ -69,7 +69,7 @@ $$ LANGUAGE plpgsql;
 -- ----------------------------------------------------------------------------------------------------------------------
 
 
--- [ ] Débuter combat
+-- [X] Débuter combat
 
 CREATE FUNCTION projet.debuter_combat(INTEGER, INTEGER) RETURNS INTEGER AS $$
 DECLARE
@@ -84,13 +84,15 @@ BEGIN
 	END IF;
 
 	INSERT INTO projet.combats (id_pm, id_archetype) VALUES (_id_pm, _id_arch) RETURNING id_combat INTO _id_combat;
-	
+
+	/*
 	-- Créer ligne de stats si pas existante
 	IF NOT EXISTS(SELECT * FROM projet.statistiques WHERE id_pm = _id_pm AND id_archetype = _id_arch) THEN
 		INSERT INTO projet.statistiques (id_pm, id_archetype) VALUES (_id_pm, _id_arch);
 	END IF;
-	
+
 	UPDATE projet.statistiques SET nb_combats_total = nb_combats_total+1, nb_combats_annee = nb_combats_annee+1 WHERE id_pm = _id_pm AND id_archetype = _id_arch;
+  */
 
 	RETURN _id_combat;
 
@@ -99,7 +101,7 @@ $$ LANGUAGE plpgsql;
 
 -- -------------------------------------------------------------------------------------------------
 
--- [ ] Conclure combat
+-- [X] Conclure combat
 
 CREATE FUNCTION projet.conclure_combat(INTEGER) RETURNS BOOLEAN AS $$
 DECLARE
@@ -113,19 +115,19 @@ DECLARE
 BEGIN
 
 	-- Vérifier que P-M est effectivement en plein combat et lever une exception si ce n'est pas le cas
-	SELECT c.id_combat, c.id_archetype, pm.puissance, a.puissance 
-	INTO _id_combat, _id_arch, _puissance_pm, _puissance_arch 
-	FROM projet.combats c 
-	INNER JOIN projet.power_mangeurs pm ON c.id_pm = pm.id_pm 
-	INNER JOIN projet.archetypes a ON c.id_archetype = a.id_archetype 
+	SELECT c.id_combat, c.id_archetype, pm.puissance, a.puissance
+	INTO _id_combat, _id_arch, _puissance_pm, _puissance_arch
+	FROM projet.combats c
+	INNER JOIN projet.power_mangeurs pm ON c.id_pm = pm.id_pm
+	INNER JOIN projet.archetypes a ON c.id_archetype = a.id_archetype
 	WHERE c.id_pm = _id_pm AND c.date_fin IS NULL;
-	
+
 	IF (_id_combat IS NULL) THEN
 		RAISE 'Pas de combat en cours.';
 	END IF;
 
 	_est_gagne:=(_puissance_pm>_puissance_arch);
-	
+
 	-- Mettre à jour issue combat
 	UPDATE projet.combats SET date_fin = LOCALTIMESTAMP, est_gagne = _est_gagne WHERE id_combat = _id_combat;
 
@@ -133,23 +135,23 @@ BEGIN
 	IF (_puissance_pm > 30) THEN
 		UPDATE projet.power_mangeurs SET puissance = 30 WHERE id_pm = _id_pm;
 	END IF;
-	
-	
+
+/*
 	IF (_est_gagne) THEN
-		
+
 		-- Incrémenter stats P-M
 		UPDATE projet.statistiques SET nb_victoires_total = nb_victoires_total+1, nb_victoires_annee = nb_victoires_annee+1 WHERE id_pm = _id_pm AND id_archetype = _id_arch;
-		
+
 	ELSE
-		
+
 		-- Décrémenter vie P-M
 		UPDATE projet.power_mangeurs SET vie = vie-1 WHERE id_pm = _id_pm RETURNING vie INTO _vie;
 		IF (_vie = 0) THEN
 			UPDATE projet.power_mangeurs SET date_deces = LOCALTIMESTAMP WHERE id_pm = _id_pm;
 		END IF;
-		
+
 	END IF;
-	
+*/
 
 	RETURN _est_gagne;
 
@@ -158,40 +160,42 @@ $$ LANGUAGE plpgsql;
 
 -- -------------------------------------------------------------------------------------------------
 
--- [ ] Utiliser P-U
+-- [X] Utiliser P-U
 
 CREATE FUNCTION projet.utiliser_pu(INTEGER, INTEGER) RETURNS BOOLEAN AS $$
 DECLARE
-	_id_pm					ALIAS FOR $1;
-	_id_pu					ALIAS FOR $2;
-	_id_combat				INTEGER;
+	_id_pm					      ALIAS FOR $1;
+	_id_pu					      ALIAS FOR $2;
+	_id_combat				    INTEGER;
+	_facteur							INTEGER;
 	_derniere_utilisation	TIMESTAMP;
 BEGIN
 
+  -- Vérifier que P-M est effectivement en plein combat et lever une exception si ce n'est pas le cas
 	SELECT id_combat INTO _id_combat FROM projet.combats WHERE id_pm = _id_pm AND date_fin IS NULL;
 	IF (_id_combat IS NULL) THEN
 		RAISE 'Pas de combat en cours.';
 	END IF;
-	
+
 	-- Vérifier que P-U n'a pas déjà été utilisé aujourd'hui
 	SELECT date_utilisation INTO _derniere_utilisation FROM projet.utilisations WHERE id_pu = _id_pu ORDER BY date_utilisation DESC LIMIT 1;
-	
-	-- Selectionner le facteur du Power Up
-	SELECT facteur INTO _facteur FROM projet.power_ups WHERE id_pu = _id_pu;
-	    
+
 	-- 1x/jour : date_trunc('day', _derniere_utilisation) < date_trunc('day', NOW())
 	-- 1x/24h : (NOW()-_derniere_utilisation) > interval '1 day'
 	IF (_derniere_utilisation IS NULL OR FALSE) THEN
-		
+
+		-- Selectionner le facteur du Power Up
+    SELECT facteur INTO _facteur FROM projet.power_ups WHERE id_pu = _id_pu;
+
 		INSERT INTO projet.utilisations (id_combat, id_pu) VALUES (_id_combat, _id_pu);
 		UPDATE projet.power_mangeurs SET puissance = puissance+puissance*_facteur/100 WHERE id_pm = _id_pm;
-		
+
 	ELSE
 		RAISE 'Ce Power-Up a déjà été utilisé aujourd''hui !';
 	END IF;
-	
+
 	RETURN TRUE;
-	
+
 END;
 $$ LANGUAGE plpgsql;
 
@@ -267,19 +271,19 @@ BEGIN
 	-- Retourner date début combat
 	SELECT _debut_combat, 'Début du combat' INTO _action;
 	RETURN NEXT _action;
-	
+
 	-- Retourner utilisations P-U
-	FOR _power_up IN 
+	FOR _power_up IN
 		SELECT ut.date_utilisation, pu.nom FROM projet.utilisations ut INNER JOIN projet.power_ups pu ON ut.id_pu = pu.id_pu WHERE id_combat = _id_combat ORDER BY ut.date_utilisation ASC
 	LOOP
 		SELECT _power_up.date_utilisation, 'Activation du P-U ' || _power_up.nom INTO _action;
 		RETURN NEXT _action;
 	END LOOP;
-	
+
 	-- Retourner date fin combat
 	SELECT _fin_combat, 'Fin du combat' INTO _action;
 	RETURN NEXT _action;
-	
+
 	RETURN;
 
 END;
