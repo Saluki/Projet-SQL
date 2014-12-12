@@ -327,7 +327,7 @@ DECLARE
 	sortie projet.ligne_stat;
 BEGIN
 
-  SELECT projet.verifier_stats_annee();
+  PERFORM projet.verifier_stats_annee();
 
 	FOR sortie IN
 		SELECT
