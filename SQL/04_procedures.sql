@@ -90,6 +90,7 @@ BEGIN
 
   PERFORM projet.verifier_stats_annee();
 
+
 	RETURN QUERY SELECT
 		 pm.nom,
 		 SUM(s.nb_victoires_annee) AS "victoires"
