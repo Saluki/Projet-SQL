@@ -83,7 +83,7 @@ $$ LANGUAGE plpgsql;
 
 -- [X] Classement Power Mangeur
 
-CREATE FUNCTION projet.classer_pm() RETURNS TABLE(nom VARCHAR(100), victoires INTEGER) AS $$
+CREATE FUNCTION projet.classer_pm() RETURNS TABLE(nom VARCHAR(100), victoires BIGINT) AS $$
 DECLARE
 	_dernier_combat	TIMESTAMP;
 BEGIN
@@ -97,7 +97,7 @@ BEGIN
 	 FROM projet.statistiques s
 		 RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
 	 WHERE pm.vie > 0
-	 GROUP BY nom
+	 GROUP BY pm.nom
 	 HAVING SUM(s.nb_victoires_annee) IS NOT NULL
 	 ORDER BY victoires DESC;
 
