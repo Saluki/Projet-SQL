@@ -192,7 +192,7 @@ DECLARE
 BEGIN
 
 	-- Vérifier l'existence du P-M
-	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = nom_pm;
+	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = _nom_pm;
 	IF (_id_pm IS NULL) THEN
 		RAISE '% n''existe pas !', _nom_pm USING ERRCODE = 'invalid_foreign_key';
 	END IF;
@@ -208,7 +208,7 @@ $$ LANGUAGE plpgsql;
 
 -- Vérification des statistiques de l'année courante
 
-CREATE FUNCTION projet.verifier_stats_annee() RETURNS BOOLEAN AS $$
+CREATE FUNCTION projet.verifier_stats_annee() RETURNS VOID AS $$
 DECLARE
 	_dernier_combat TIMESTAMP;
 BEGIN
@@ -216,10 +216,7 @@ BEGIN
   SELECT date_debut INTO _dernier_combat FROM projet.combats ORDER BY date_debut DESC LIMIT 1;
   IF (_dernier_combat IS NOT NULL AND EXTRACT(YEAR FROM _dernier_combat) < EXTRACT(YEAR FROM NOW())) THEN
     UPDATE projet.statistiques SET nb_combats_annee = 0, nb_victoires_annee = 0;
-		RETURN TRUE;
   END IF;
-
-	RETURN FALSE;
 
 END;
 $$ LANGUAGE plpgsql;
@@ -234,7 +231,7 @@ DECLARE
 	sortie          projet.classification_pm;
 BEGIN
 
-  SELECT projet.verifier_stats_annee();
+  PERFORM projet.verifier_stats_annee();
 
 	FOR sortie IN
 		SELECT
@@ -521,9 +518,11 @@ $$ LANGUAGE plpgsql;
 -- Vérifier si nouvelle année et mettre stats de l'année à zéro (pour tout le monde) si c'est le cas
 
 CREATE FUNCTION projet.verifier_stats() RETURNS TRIGGER AS $$
+DECLARE
+	_dernier_combat TIMESTAMP;
 BEGIN
 
-	SELECT projet.verifier_stats_annee();
+	PERFORM projet.verifier_stats_annee();
 
 	RETURN NEW;
 
