@@ -5,11 +5,11 @@
 
 -- [X] Inscription P-M
 
-CREATE FUNCTION projet.inscrire_pm(VARCHAR(100), CHAR(6), VARCHAR(150)) RETURNS INTEGER AS $$
+CREATE FUNCTION projet.inscrire_pm(VARCHAR(100), VARCHAR(150), CHAR(6)) RETURNS INTEGER AS $$
 DECLARE
   _nom      ALIAS FOR $1;
-  _couleur  ALIAS FOR $2;
-  _mdp      ALIAS FOR $3;
+  _mdp      ALIAS FOR $2;
+  _couleur  ALIAS FOR $3;
   _id       INTEGER;
 BEGIN
 
@@ -52,7 +52,7 @@ DECLARE
 BEGIN
 
 	-- Vérifier l'existence du P-M
-	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = nom_pm;
+	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = _nom_pm;
 	IF (_id_pm IS NULL) THEN
 		RAISE '% n''existe pas !', _nom_pm USING ERRCODE = 'invalid_foreign_key';
 	END IF;
@@ -60,6 +60,54 @@ BEGIN
 	INSERT INTO projet.power_ups (nom, id_pm, facteur) VALUES (_nom_pu, _id_pm, _facteur_pu) RETURNING id_pu INTO _id_pu;
 
 	RETURN _id_pu;
+
+END;
+$$ LANGUAGE plpgsql;
+
+-- -------------------------------------------------------------------------------------------------
+
+-- Vérification des statistiques de l'année courante
+
+CREATE FUNCTION projet.verifier_stats_annee() RETURNS VOID AS $$
+DECLARE
+	_dernier_combat TIMESTAMP;
+BEGIN
+
+  SELECT date_debut INTO _dernier_combat FROM projet.combats ORDER BY date_debut DESC LIMIT 1;
+  IF (_dernier_combat IS NOT NULL AND EXTRACT(YEAR FROM _dernier_combat) < EXTRACT(YEAR FROM NOW())) THEN
+    UPDATE projet.statistiques SET nb_combats_annee = 0, nb_victoires_annee = 0;
+  END IF;
+
+END;
+$$ LANGUAGE plpgsql;
+
+-- [X] Classement Power Mangeur
+
+CREATE TYPE projet.classification_pm AS (nom VARCHAR(100), victoires INTEGER);
+
+CREATE FUNCTION projet.classer_pm() RETURNS SETOF projet.classification_pm AS $$
+DECLARE
+	_dernier_combat	TIMESTAMP;
+	sortie          projet.classification_pm;
+BEGIN
+
+  PERFORM projet.verifier_stats_annee();
+
+	FOR sortie IN
+		SELECT
+			pm.nom,
+			SUM(s.nb_victoires_annee) AS "victoires"
+		FROM projet.statistiques s
+			RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
+		WHERE pm.vie > 0
+		GROUP BY nom
+		HAVING SUM(s.nb_victoires_annee) IS NOT NULL
+		ORDER BY victoires DESC
+	LOOP
+			RETURN NEXT sortie;
+	END LOOP;
+
+	RETURN;
 
 END;
 $$ LANGUAGE plpgsql;
@@ -84,15 +132,6 @@ BEGIN
 	END IF;
 
 	INSERT INTO projet.combats (id_pm, id_archetype) VALUES (_id_pm, _id_arch) RETURNING id_combat INTO _id_combat;
-
-	/*
-	-- Créer ligne de stats si pas existante
-	IF NOT EXISTS(SELECT * FROM projet.statistiques WHERE id_pm = _id_pm AND id_archetype = _id_arch) THEN
-		INSERT INTO projet.statistiques (id_pm, id_archetype) VALUES (_id_pm, _id_arch);
-	END IF;
-
-	UPDATE projet.statistiques SET nb_combats_total = nb_combats_total+1, nb_combats_annee = nb_combats_annee+1 WHERE id_pm = _id_pm AND id_archetype = _id_arch;
-  */
 
 	RETURN _id_combat;
 
@@ -170,7 +209,7 @@ BEGIN
 
 	-- 1x/jour : date_trunc('day', _derniere_utilisation) < date_trunc('day', NOW())
 	-- 1x/24h : (NOW()-_derniere_utilisation) > interval '1 day'
-	IF (_derniere_utilisation IS NULL OR FALSE) THEN
+	IF (_derniere_utilisation IS NULL OR (NOW()-_derniere_utilisation) > interval '1 day') THEN
 
 		-- Selectionner le facteur du Power Up
     SELECT facteur INTO _facteur FROM projet.power_ups WHERE id_pu = _id_pu;
@@ -278,6 +317,37 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- -------------------------------------------------------------------------------------------------
+
+-- Statistiques PM
+
+CREATE TYPE projet.ligne_stat AS (nom_archetype VARCHAR(100), nb_combats_total INTEGER, nb_victoires_total INTEGER, nb_combats_annee INTEGER, nb_victoires_annee INTEGER);
+
+CREATE FUNCTION projet.stats_pm(INTEGER) RETURNS SETOF projet.ligne_stat AS $$
+DECLARE
+	sortie projet.ligne_stat;
+BEGIN
+
+  SELECT projet.verifier_stats_annee();
+
+	FOR sortie IN
+		SELECT
+			a.nom AS "nom_archetype",
+			s.nb_combats_total,
+			s.nb_victoires_total,
+			s.nb_combats_annee,
+			s.nb_victoires_annee
+		FROM projet.statistiques s
+			INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype
+	LOOP
+			RETURN NEXT sortie;
+	END LOOP;
+
+	RETURN;
+
+END;
+$$ LANGUAGE plpgsql;
+
+--  -------------------------------------------------------------------------------------------------
 
 -- [X] Espérance de vie
 
