@@ -9,12 +9,11 @@ import java.util.Scanner;
 
 public class BattleHandler {
 	
-	private static final int BATTLETIME = 10;
+	private static final int BATTLETIME = 1;
 	
-	private static Scanner scan = new Scanner(System.in);
+	private static Scanner scan;
 	
 	private Connection dbConnection;
-	
 	private int userID;
 	
 	private int battleID;
@@ -28,6 +27,9 @@ public class BattleHandler {
 		
 		this.dbConnection = c;
 		this.userID = userID;
+		
+		scan = new Scanner(System.in);
+		scan.useDelimiter("\\n");
 		
 		if( setRandomMonster() == false ) {
 			System.out.println("Yeah, aucun monstre a combattre pour l'instant...");
@@ -167,8 +169,13 @@ public class BattleHandler {
 		}
 		
 		try {
-			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.conclure_combat(?)");
+			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.conclure_combat(?,?)");
 			ps.setInt(1, userID);
+			if( force ) {
+				ps.setBoolean(2, true);
+			} else {
+				ps.setBoolean(2, false);
+			}
 			ResultSet rs = ps.executeQuery();
 			
 			rs.next();
@@ -186,22 +193,27 @@ public class BattleHandler {
 	}
 	
 	private void usePowerUp() {
-		
-		System.out.println("\nChoisir un Power-Up");
-		System.out.println("-------------------\n");
 				
 		try {
 			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.power_ups WHERE id_pm = ?");
 			ps.setInt(1, userID);
 			ResultSet rs = ps.executeQuery();
 			
-			while( rs.next() ) {
-				
+			if( !rs.next() ) {
+				System.out.println("\nDesole, aucun Power-Up disponible");
+				return;
+			}
+			
+			System.out.println("\nChoisir un Power-Up");
+			System.out.println("-------------------\n");
+			
+			do {
 				int ID = rs.getInt("id_pu");
 				String name = rs.getString("nom");
 				
 				System.out.println("#"+ID+"\t"+name);
 			}
+			while( rs.next() );
 			System.out.println("#0\tAnnuler");
 			
 			System.out.println("\nChoix : ");

@@ -30,7 +30,7 @@ public class HistoryHandler {
 			System.out.println("-------------------------\n");
 			
 			if( !rs.next() ) {
-				System.out.println("Tu n'as fait encore aucun combat");
+				System.out.println("Aucun historique disponible");
 				return;
 			}
 			

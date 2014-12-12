@@ -62,12 +62,13 @@ CREATE VIEW projet.statistiques_combats AS
   FROM projet.statistiques s
     INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype;
 */
+
 -- Historique power ups
 
 CREATE VIEW projet.historique_pu AS
 
 	SELECT pu.id_pm, pu.nom, pu.facteur, u.date_utilisation
 	FROM projet.power_ups pu
-	LEFT JOIN projet.utilisations u ON pu.id_pu = u.id_pu
+	INNER JOIN projet.utilisations u ON pu.id_pu=u.id_pu
 	ORDER BY u.date_utilisation;
 
