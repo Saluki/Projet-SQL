@@ -224,31 +224,23 @@ $$ LANGUAGE plpgsql;
 
 -- [X] Classement Power Mangeur
 
-CREATE TYPE projet.classification_pm AS (nom VARCHAR(100), victoires INTEGER);
-
-CREATE FUNCTION projet.classer_pm() RETURNS SETOF projet.classification_pm AS $$
+CREATE FUNCTION projet.classer_pm() RETURNS TABLE(nom VARCHAR(100), victoires INTEGER) AS $$
 DECLARE
 	_dernier_combat	TIMESTAMP;
-	sortie          projet.classification_pm;
 BEGIN
 
   PERFORM projet.verifier_stats_annee();
 
-	FOR sortie IN
-		SELECT
-			pm.nom,
-			SUM(s.nb_victoires_annee) AS "victoires"
-		FROM projet.statistiques s
-			RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
-		WHERE pm.vie > 0
-		GROUP BY nom
-		HAVING SUM(s.nb_victoires_annee) IS NOT NULL
-		ORDER BY victoires DESC
-	LOOP
-			RETURN NEXT sortie;
-	END LOOP;
 
-	RETURN;
+	RETURN QUERY SELECT
+		 pm.nom,
+		 SUM(s.nb_victoires_annee) AS "victoires"
+	 FROM projet.statistiques s
+		 RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
+	 WHERE pm.vie > 0
+	 GROUP BY nom
+	 HAVING SUM(s.nb_victoires_annee) IS NOT NULL
+	 ORDER BY victoires DESC;
 
 END;
 $$ LANGUAGE plpgsql;
@@ -461,31 +453,20 @@ $$ LANGUAGE plpgsql;
 
 -- Statistiques PM
 
-CREATE TYPE projet.ligne_stat AS (nom_archetype VARCHAR(100), nb_combats_total INTEGER, nb_victoires_total INTEGER, nb_combats_annee INTEGER, nb_victoires_annee INTEGER);
-
-CREATE FUNCTION projet.stats_pm(INTEGER) RETURNS SETOF projet.ligne_stat AS $$
+CREATE FUNCTION projet.stats_pm(INTEGER) RETURNS TABLE(nom_archetype VARCHAR(100), nb_combats_total INTEGER, nb_victoires_total INTEGER, nb_combats_annee INTEGER, nb_victoires_annee INTEGER) AS $$
 DECLARE
 	_id_pm ALIAS FOR $1;
-	sortie projet.ligne_stat;
 BEGIN
 
-  PERFORM projet.verifier_stats_annee();
-
-	FOR sortie IN
-		SELECT
-			a.nom AS "nom_archetype",
-			s.nb_combats_total,
-			s.nb_victoires_total,
-			s.nb_combats_annee,
-			s.nb_victoires_annee
-		FROM projet.statistiques s
-			INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype
-			WHERE s.id_pm = _id_pm
-	LOOP
-			RETURN NEXT sortie;
-	END LOOP;
-
-	RETURN;
+  RETURN QUERY SELECT
+		 a.nom AS "nom_archetype",
+		 s.nb_combats_total,
+		 s.nb_victoires_total,
+		 s.nb_combats_annee,
+		 s.nb_victoires_annee
+	 FROM projet.statistiques s
+		 INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype
+		WHERE id_pm = _id_pm;
 
 END;
 $$ LANGUAGE plpgsql;
