@@ -38,7 +38,7 @@ public class Terminal {
             statements.add(db.prepareStatement("SELECT projet.inscrire_pm(?, ?, ?);"));
             statements.add(db.prepareStatement("SELECT projet.ajouter_archetype(?, ?);"));
             statements.add(db.prepareStatement("SELECT projet.attribuer_pu(?, ?, ?);"));
-            statements.add(db.prepareStatement("SELECT * FROM projet.classement_pm;"));
+            statements.add(db.prepareStatement("SELECT * FROM projet.classer_pm();"));
             statements.add(db.prepareStatement("SELECT * FROM projet.liste_decedes"));
             statements.add(db.prepareStatement("SELECT * FROM projet.historique_combats WHERE nom_pm = ? AND date_debut BETWEEN ? AND ?"));
             statements.add(db.prepareStatement("SELECT * FROM projet.historique_combats WHERE nom_archetype = ? AND date_debut BETWEEN ? AND ?"));
@@ -49,6 +49,7 @@ public class Terminal {
         }
 
         scan = new Scanner(System.in);
+        scan.useDelimiter("\\n");
 
         launch();
 
@@ -148,15 +149,6 @@ public class Terminal {
             }
             statement.setString(1, nom);
 
-            System.out.print("Couleur : ");
-            try {
-                couleur = scan.next();
-            } catch (Exception e) {
-                System.out.println("Problème d'input.");
-                return;
-            }
-            statement.setString(2, couleur);
-
             System.out.print("Mot de passe : ");
             try {
                 mdp = scan.next();
@@ -165,7 +157,16 @@ public class Terminal {
                 return;
             }
             mdp = CryptService.hash(mdp);
-            statement.setString(3, mdp);
+            statement.setString(2, mdp);
+
+            System.out.print("Couleur : ");
+            try {
+                couleur = scan.next();
+            } catch (Exception e) {
+                System.out.println("Problème d'input.");
+                return;
+            }
+            statement.setString(3, couleur);
 
         } catch (SQLException e) {
             System.out.println("Erreur avec la base de données.");
@@ -175,8 +176,6 @@ public class Terminal {
         System.out.println("Inscription du PM en cours...");
         try {
             statement.execute();
-//            ResultSet result = statement.executeQuery();
-//            int id_pm = result.getInt(1);
             System.out.println("Inscription réussie !");
         } catch (SQLException e) {
             System.out.println("Problème à l'inscription !");
@@ -290,21 +289,25 @@ public class Terminal {
 
         try {
             ResultSet result = statements.get(choix).executeQuery();
-            System.out.println(" ----------------------------- ");
-            System.out.println("|  Power Mangeur  | Victoires |");
-            System.out.println(" ----------------------------- ");
-            while (result.next()) {
-                nom_pm = result.getString(1);
-                nb_victoires = result.getInt(2);
+            if (result.next()) {
+                System.out.println(" ----------------------------- ");
+                System.out.println("|  Power Mangeur  | Victoires |");
+                System.out.println(" ----------------------------- ");
+                do {
+                    nom_pm = result.getString(1);
+                    nb_victoires = result.getInt(2);
 
-                System.out.print("| "+nom_pm);
-                for (int i = nom_pm.length(); i < 15; i++)
-                    System.out.print(" ");
-                System.out.println(" |     "+nb_victoires+"     |");
-            }
-            System.out.println(" ----------------------------- ");
+                    System.out.print("| "+nom_pm);
+                    for (int i = nom_pm.length(); i < 15; i++)
+                        System.out.print(" ");
+                    System.out.println(" |     "+nb_victoires+"     |");
+                } while (result.next());
+                System.out.println(" ----------------------------- ");
+            } else
+                System.out.println("Il n'y a aucun Power Mangeur enregistré !");
         } catch (SQLException e) {
             System.out.println("Erreur avec la base de données.");
+            System.out.println(e.getMessage());
         }
 
     }
@@ -319,19 +322,22 @@ public class Terminal {
 
         try {
             ResultSet result = statements.get(choix).executeQuery();
-            System.out.println(" ------------------------------ ");
-            System.out.println("|  Power Mangeur  | Date décès |");
-            System.out.println(" ------------------------------ ");
-            while (result.next()) {
-                nom_pm = result.getString(1);
-                deces = result.getDate(2);
+            if (result.next()) {
+                System.out.println(" ------------------------------ ");
+                System.out.println("|  Power Mangeur  | Date décès |");
+                System.out.println(" ------------------------------ ");
+                do {
+                    nom_pm = result.getString(1);
+                    deces = result.getDate(2);
 
-                System.out.print("| "+nom_pm);
-                for (int i = nom_pm.length(); i < 15; i++)
-                    System.out.print(" ");
-                System.out.println(" | "+deces+" |");
-            }
-            System.out.println(" ------------------------------ ");
+                    System.out.print("| "+nom_pm);
+                    for (int i = nom_pm.length(); i < 15; i++)
+                        System.out.print(" ");
+                    System.out.println(" | "+deces+" |");
+                } while (result.next());
+                System.out.println(" ------------------------------ ");
+            } else
+                System.out.println("Bonne nouvelle ! Aucun Power Mangeur n'est mort cette année !");
         } catch (SQLException e) {
             System.out.println("Erreur avec la base de données.");
         }
@@ -340,7 +346,7 @@ public class Terminal {
 
     private static void historique_pm () {
 
-        String nom_pm, nom_archetype, date_debut, date_fin, victoire;
+        String nom_pm, nom_archetype, date_debut, date_fin, issue;
         Date debut, fin;
         PreparedStatement statement = statements.get(choix);
 
@@ -403,19 +409,27 @@ public class Terminal {
                 System.out.println(" --------------------------------------------------------- ");
                 do {
                     nom_archetype = result.getString(2);
+
                     debut = result.getDate(3);
+                    date_debut = debut.toString();
+
                     fin = result.getDate(4);
-                    victoire = result.getBoolean(5) ? "Victoire" : "Défaite ";
+                    date_fin = (fin == null) ? " En cours " : fin.toString();
+
+                    if (result.getObject(5) == null)
+                        issue = "Inconnue";
+                    else
+                        issue = result.getBoolean(5) ? "Victoire" : "Défaite ";
 
                     System.out.print("| "+nom_archetype);
                     for (int i = nom_archetype.length(); i < 18; i++)
                         System.out.print(" ");
-                    System.out.println(" | "+debut+" | "+fin+" | "+victoire+" |");
+                    System.out.println(" | "+date_debut+" | "+date_fin+" | "+issue+" |");
                 } while (result.next());
                 System.out.println(" --------------------------------------------------------- ");
             }
             else
-                System.out.println("Aucun combat trouvé.");
+                System.out.println("Aucun combat n'a été trouvé.");
         } catch (SQLException e) {
             System.out.println("Problème avec la requête.");
             System.out.println(e.getMessage());
@@ -424,7 +438,7 @@ public class Terminal {
 
     private static void historique_archetype () {
 
-        String nom_pm, nom_archetype, date_debut, date_fin, victoire;
+        String nom_pm, nom_archetype, date_debut, date_fin, issue;
         Date debut, fin;
         PreparedStatement statement = statements.get(choix);
 
@@ -487,19 +501,27 @@ public class Terminal {
                 System.out.println(" ------------------------------------------------------ ");
                 do {
                     nom_pm = result.getString(1);
+
                     debut = result.getDate(3);
+                    date_debut = debut.toString();
+
                     fin = result.getDate(4);
-                    victoire = result.getBoolean(5) ? "Défaite " : "Victoire";
+                    date_fin = (fin == null) ? " En cours " : fin.toString();
+
+                    if (result.getObject(5) == null)
+                        issue = "Inconnue";
+                    else
+                        issue = result.getBoolean(5) ? "Défaite " : "Victoire";
 
                     System.out.print("| "+nom_pm);
                     for (int i = nom_pm.length(); i < 15; i++)
                         System.out.print(" ");
-                    System.out.println(" | "+debut+" | "+fin+" | "+victoire+" |");
+                    System.out.println(" | "+date_debut+" | "+date_fin+" | "+issue+" |");
                 } while (result.next());
                 System.out.println(" ------------------------------------------------------ ");
             }
             else
-                System.out.println("Aucun combat trouvé.");
+                System.out.println("Aucun combat n'a été trouvé.");
         } catch (SQLException e) {
             System.out.println("Problème avec la requête.");
             System.out.println(e.getMessage());

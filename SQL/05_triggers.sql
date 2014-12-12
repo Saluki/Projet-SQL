@@ -6,10 +6,7 @@ DECLARE
 	_dernier_combat TIMESTAMP;
 BEGIN
 
-	SELECT c.date_debut INTO _dernier_combat FROM projet.combats c ORDER BY c.date_debut DESC LIMIT 1;
-	IF (_dernier_combat IS NOT NULL AND EXTRACT(YEAR FROM _dernier_combat) < EXTRACT(YEAR FROM NEW.date_debut)) THEN
-		UPDATE projet.statistiques SET nb_combats_annee = 0, nb_victoires_annee = 0;
-	END IF;
+	PERFORM projet.verifier_stats_annee();
 
 	RETURN NEW;
 
@@ -58,9 +55,9 @@ CREATE FUNCTION projet.ajouter_victoire() RETURNS TRIGGER AS $$
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER ajouter_victoire 
-	AFTER UPDATE OF est_gagne ON projet.combats
+	AFTER INSERT OR UPDATE OF est_gagne ON projet.combats
 	FOR EACH ROW
-	WHEN (OLD.est_gagne IS NULL AND NEW.est_gagne = TRUE)
+	WHEN (NEW.est_gagne = TRUE)
 	EXECUTE PROCEDURE projet.ajouter_victoire();
 
 -- Défaite
@@ -82,7 +79,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER ajouter_defaite 
-	AFTER UPDATE OF est_gagne ON projet.combats
+	AFTER INSERT OR UPDATE OF est_gagne ON projet.combats
 	FOR EACH ROW
-	WHEN (OLD.est_gagne IS NULL AND NEW.est_gagne = FALSE)
+	WHEN (NEW.est_gagne = FALSE)
 	EXECUTE PROCEDURE projet.ajouter_defaite();

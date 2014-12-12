@@ -84,7 +84,7 @@ CREATE VIEW projet.historique_combats (nom_pm, nom_archetype, date_debut, date_f
   ORDER BY c.date_debut ASC;
 
 -- Classement meilleurs P-M
-
+/*
 CREATE VIEW projet.classement_pm AS
   SELECT
     pm.nom,
@@ -93,8 +93,9 @@ CREATE VIEW projet.classement_pm AS
     RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
   WHERE pm.vie > 0
   GROUP BY nom
+  HAVING SUM(s.nb_victoires_annee) IS NOT NULL
   ORDER BY victoires DESC;
-
+*/
 -- Liste P-M décédés
 
 CREATE VIEW projet.liste_decedes AS
@@ -120,14 +121,14 @@ CREATE VIEW projet.monstre_au_hasard AS
 	LIMIT 1;
 
 -- Nombre monstres combattus/gagnés depuis début/année
-
+/*
 CREATE VIEW projet.statistiques_combats AS
   SELECT
     s.*,
     a.nom AS "nom_archetype"
   FROM projet.statistiques s
     INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype;
-
+*/
 -- Historique power ups
 
 CREATE VIEW projet.historique_pu AS
@@ -137,70 +138,6 @@ CREATE VIEW projet.historique_pu AS
 	LEFT JOIN projet.utilisations u ON pu.id_pu = u.id_pu
 	ORDER BY u.date_utilisation;
 
--- ---------------------------------------------------------------------------------
---                                    Toriko
--- ---------------------------------------------------------------------------------
-
--- Historique combats entre 2 dates / P-M
-
-CREATE VIEW projet.historique_combats (nom_pm, nom_archetype, date_debut, date_fin, est_gagne) AS
-  SELECT
-    pm.nom AS "nom_pm",
-    a.nom  AS "nom_archetype",
-    c.date_debut,
-    c.date_fin,
-    c.est_gagne
-  FROM projet.combats c
-    INNER JOIN projet.power_mangeurs pm ON c.id_pm = pm.id_pm
-    INNER JOIN projet.archetypes a ON c.id_archetype = a.id_archetype
-  ORDER BY c.date_debut ASC;
-
--- Classement meilleurs P-M
-
-CREATE VIEW projet.classement_pm AS
-  SELECT
-    pm.nom,
-    SUM(s.nb_victoires_annee) AS "victoires"
-  FROM projet.statistiques s
-    RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
-  WHERE pm.vie > 0
-  GROUP BY nom
-  ORDER BY victoires DESC;
-
--- Liste P-M décédés
-
-CREATE VIEW projet.liste_decedes AS
-  SELECT
-    pm.nom,
-    pm.date_deces
-  FROM projet.power_mangeurs pm
-  WHERE pm.date_deces IS NOT NULL
-        AND EXTRACT(YEAR FROM pm.date_deces) = EXTRACT(YEAR FROM NOW());
-
--- Autres...
-
--- ---------------------------------------------------------------------------------
---                                Power-Mangeurs
--- ---------------------------------------------------------------------------------
-
--- Monstro-nourriture tire au hasard
-
-CREATE VIEW projet.monstre_au_hasard AS
-	SELECT a.*
-	FROM projet.archetypes a
-	ORDER BY RANDOM()
-	LIMIT 1;
-
--- Nombre monstres combattus/gagnés depuis début/année
-
-CREATE VIEW projet.statistiques_combats AS
-  SELECT
-    s.*,
-    a.nom AS "nom_archetype"
-  FROM projet.statistiques s
-    INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype;
-
--- Autres...
 -- ----------------------------------------------------------------------------------------------------------------------
 --                                                    Toriko
 -- ----------------------------------------------------------------------------------------------------------------------
@@ -208,11 +145,11 @@ CREATE VIEW projet.statistiques_combats AS
 
 -- [X] Inscription P-M
 
-CREATE FUNCTION projet.inscrire_pm(VARCHAR(100), CHAR(6), VARCHAR(150)) RETURNS INTEGER AS $$
+CREATE FUNCTION projet.inscrire_pm(VARCHAR(100), VARCHAR(150), CHAR(6)) RETURNS INTEGER AS $$
 DECLARE
   _nom      ALIAS FOR $1;
-  _couleur  ALIAS FOR $2;
-  _mdp      ALIAS FOR $3;
+  _mdp      ALIAS FOR $2;
+  _couleur  ALIAS FOR $3;
   _id       INTEGER;
 BEGIN
 
@@ -255,7 +192,7 @@ DECLARE
 BEGIN
 
 	-- Vérifier l'existence du P-M
-	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = nom_pm;
+	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = _nom_pm;
 	IF (_id_pm IS NULL) THEN
 		RAISE '% n''existe pas !', _nom_pm USING ERRCODE = 'invalid_foreign_key';
 	END IF;
@@ -263,6 +200,54 @@ BEGIN
 	INSERT INTO projet.power_ups (nom, id_pm, facteur) VALUES (_nom_pu, _id_pm, _facteur_pu) RETURNING id_pu INTO _id_pu;
 
 	RETURN _id_pu;
+
+END;
+$$ LANGUAGE plpgsql;
+
+-- -------------------------------------------------------------------------------------------------
+
+-- Vérification des statistiques de l'année courante
+
+CREATE FUNCTION projet.verifier_stats_annee() RETURNS VOID AS $$
+DECLARE
+	_dernier_combat TIMESTAMP;
+BEGIN
+
+  SELECT date_debut INTO _dernier_combat FROM projet.combats ORDER BY date_debut DESC LIMIT 1;
+  IF (_dernier_combat IS NOT NULL AND EXTRACT(YEAR FROM _dernier_combat) < EXTRACT(YEAR FROM NOW())) THEN
+    UPDATE projet.statistiques SET nb_combats_annee = 0, nb_victoires_annee = 0;
+  END IF;
+
+END;
+$$ LANGUAGE plpgsql;
+
+-- [X] Classement Power Mangeur
+
+CREATE TYPE projet.classification_pm AS (nom VARCHAR(100), victoires INTEGER);
+
+CREATE FUNCTION projet.classer_pm() RETURNS SETOF projet.classification_pm AS $$
+DECLARE
+	_dernier_combat	TIMESTAMP;
+	sortie          projet.classification_pm;
+BEGIN
+
+  PERFORM projet.verifier_stats_annee();
+
+	FOR sortie IN
+		SELECT
+			pm.nom,
+			SUM(s.nb_victoires_annee) AS "victoires"
+		FROM projet.statistiques s
+			RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
+		WHERE pm.vie > 0
+		GROUP BY nom
+		HAVING SUM(s.nb_victoires_annee) IS NOT NULL
+		ORDER BY victoires DESC
+	LOOP
+			RETURN NEXT sortie;
+	END LOOP;
+
+	RETURN;
 
 END;
 $$ LANGUAGE plpgsql;
@@ -287,15 +272,6 @@ BEGIN
 	END IF;
 
 	INSERT INTO projet.combats (id_pm, id_archetype) VALUES (_id_pm, _id_arch) RETURNING id_combat INTO _id_combat;
-
-	/*
-	-- Créer ligne de stats si pas existante
-	IF NOT EXISTS(SELECT * FROM projet.statistiques WHERE id_pm = _id_pm AND id_archetype = _id_arch) THEN
-		INSERT INTO projet.statistiques (id_pm, id_archetype) VALUES (_id_pm, _id_arch);
-	END IF;
-
-	UPDATE projet.statistiques SET nb_combats_total = nb_combats_total+1, nb_combats_annee = nb_combats_annee+1 WHERE id_pm = _id_pm AND id_archetype = _id_arch;
-  */
 
 	RETURN _id_combat;
 
@@ -373,7 +349,7 @@ BEGIN
 
 	-- 1x/jour : date_trunc('day', _derniere_utilisation) < date_trunc('day', NOW())
 	-- 1x/24h : (NOW()-_derniere_utilisation) > interval '1 day'
-	IF (_derniere_utilisation IS NULL OR FALSE) THEN
+	IF (_derniere_utilisation IS NULL OR (NOW()-_derniere_utilisation) > interval '1 day') THEN
 
 		-- Selectionner le facteur du Power Up
     SELECT facteur INTO _facteur FROM projet.power_ups WHERE id_pu = _id_pu;
@@ -482,6 +458,37 @@ $$ LANGUAGE plpgsql;
 
 -- -------------------------------------------------------------------------------------------------
 
+-- Statistiques PM
+
+CREATE TYPE projet.ligne_stat AS (nom_archetype VARCHAR(100), nb_combats_total INTEGER, nb_victoires_total INTEGER, nb_combats_annee INTEGER, nb_victoires_annee INTEGER);
+
+CREATE FUNCTION projet.stats_pm(INTEGER) RETURNS SETOF projet.ligne_stat AS $$
+DECLARE
+	sortie projet.ligne_stat;
+BEGIN
+
+  SELECT projet.verifier_stats_annee();
+
+	FOR sortie IN
+		SELECT
+			a.nom AS "nom_archetype",
+			s.nb_combats_total,
+			s.nb_victoires_total,
+			s.nb_combats_annee,
+			s.nb_victoires_annee
+		FROM projet.statistiques s
+			INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype
+	LOOP
+			RETURN NEXT sortie;
+	END LOOP;
+
+	RETURN;
+
+END;
+$$ LANGUAGE plpgsql;
+
+--  -------------------------------------------------------------------------------------------------
+
 -- [X] Espérance de vie
 
 CREATE FUNCTION projet.esperance_vie(INTEGER) RETURNS INTERVAL AS $$
@@ -515,10 +522,7 @@ DECLARE
 	_dernier_combat TIMESTAMP;
 BEGIN
 
-	SELECT c.date_debut INTO _dernier_combat FROM projet.combats c ORDER BY c.date_debut DESC LIMIT 1;
-	IF (_dernier_combat IS NOT NULL AND EXTRACT(YEAR FROM _dernier_combat) < EXTRACT(YEAR FROM NEW.date_debut)) THEN
-		UPDATE projet.statistiques SET nb_combats_annee = 0, nb_victoires_annee = 0;
-	END IF;
+	PERFORM projet.verifier_stats_annee();
 
 	RETURN NEW;
 
@@ -567,9 +571,9 @@ CREATE FUNCTION projet.ajouter_victoire() RETURNS TRIGGER AS $$
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER ajouter_victoire 
-	AFTER UPDATE OF est_gagne ON projet.combats
+	AFTER INSERT OR UPDATE OF est_gagne ON projet.combats
 	FOR EACH ROW
-	WHEN (OLD.est_gagne IS NULL AND NEW.est_gagne = TRUE)
+	WHEN (NEW.est_gagne = TRUE)
 	EXECUTE PROCEDURE projet.ajouter_victoire();
 
 -- Défaite
@@ -591,9 +595,9 @@ END;
 $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER ajouter_defaite 
-	AFTER UPDATE OF est_gagne ON projet.combats
+	AFTER INSERT OR UPDATE OF est_gagne ON projet.combats
 	FOR EACH ROW
-	WHEN (OLD.est_gagne IS NULL AND NEW.est_gagne = FALSE)
+	WHEN (NEW.est_gagne = FALSE)
 	EXECUTE PROCEDURE projet.ajouter_defaite();
 -- Suppression ordonnée pour éviter violation des contraintes
 
@@ -602,6 +606,11 @@ DELETE FROM projet.combats;
 DELETE FROM projet.power_ups;
 DELETE FROM projet.archetypes;
 DELETE FROM projet.power_mangeurs;
+
+ALTER SEQUENCE projet.id_combat RESTART;
+ALTER SEQUENCE projet.id_power_up RESTART;
+ALTER SEQUENCE projet.id_archetype RESTART;
+ALTER SEQUENCE projet.id_power_mangeur RESTART;
 
 -- Power Mangeurs
 
@@ -631,21 +640,14 @@ INSERT INTO projet.power_ups (nom, id_pm, date_attribution, facteur) VALUES
 
 -- Combats
 
-INSERT INTO projet.combats (id_pm, id_archetype, date_debut) VALUES
-  (2, 3, DEFAULT),
-  (3, 4, '2014-11-30 20:17:01'),
-  (3, 4, '2014-10-15 15:31:44'),
-  (3, 4, '2014-10-15 18:14:17'),
-  (3, 5, '2014-10-17 10:09:36'),
-  (3, 5, '2014-10-18 06:36:21'),
-  (3, 1, '2014-10-29 14:50:13');
-
-UPDATE projet.combats SET date_fin = '2014-11-30 20:22:35', est_gagne = TRUE WHERE id_combat = 2;
-UPDATE projet.combats SET date_fin = '2014-10-15 15:39:26', est_gagne = TRUE WHERE id_combat = 3;
-UPDATE projet.combats SET date_fin = '2014-10-15 18:16:43', est_gagne = FALSE WHERE id_combat = 4;
-UPDATE projet.combats SET date_fin = '2014-10-17 10:13:34', est_gagne = TRUE WHERE id_combat = 5;
-UPDATE projet.combats SET date_fin = '2014-10-18 06:46:21', est_gagne = FALSE WHERE id_combat = 6;
-UPDATE projet.combats SET date_fin = '2014-10-29 14:59:20', est_gagne = TRUE WHERE id_combat = 7;
+INSERT INTO projet.combats (id_pm, id_archetype, date_debut, date_fin, est_gagne) VALUES
+  (2, 3, DEFAULT, NULL, NULL),
+  (3, 4, '2014-11-30 20:17:01', '2014-11-30 20:22:35', TRUE),
+  (3, 4, '2014-10-15 15:31:44', '2014-10-15 15:39:26', TRUE),
+  (3, 4, '2014-10-15 18:14:17', '2014-10-15 18:16:43', FALSE),
+  (3, 5, '2014-10-17 10:09:36', '2014-10-17 10:13:34', TRUE),
+  (3, 5, '2014-10-18 06:36:21', '2014-10-18 06:46:21', FALSE),
+  (3, 1, '2014-10-29 14:50:13', '2014-10-29 14:59:20', TRUE);
 
 -- Utilisations
 

@@ -17,7 +17,7 @@ CREATE VIEW projet.historique_combats (nom_pm, nom_archetype, date_debut, date_f
   ORDER BY c.date_debut ASC;
 
 -- Classement meilleurs P-M
-
+/*
 CREATE VIEW projet.classement_pm AS
   SELECT
     pm.nom,
@@ -26,8 +26,9 @@ CREATE VIEW projet.classement_pm AS
     RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
   WHERE pm.vie > 0
   GROUP BY nom
+  HAVING SUM(s.nb_victoires_annee) IS NOT NULL
   ORDER BY victoires DESC;
-
+*/
 -- Liste P-M décédés
 
 CREATE VIEW projet.liste_decedes AS
@@ -53,14 +54,14 @@ CREATE VIEW projet.monstre_au_hasard AS
 	LIMIT 1;
 
 -- Nombre monstres combattus/gagnés depuis début/année
-
+/*
 CREATE VIEW projet.statistiques_combats AS
   SELECT
     s.*,
     a.nom AS "nom_archetype"
   FROM projet.statistiques s
     INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype;
-
+*/
 -- Historique power ups
 
 CREATE VIEW projet.historique_pu AS
