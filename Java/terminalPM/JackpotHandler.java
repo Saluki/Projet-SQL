@@ -28,7 +28,12 @@ public class JackpotHandler {
 	
 		String s1 = generateRandomSymbol(), s2 = generateRandomSymbol(), s3 = generateRandomSymbol();
 		
-		System.out.println("\n[GENERATION DES SYMBOLES]\n");
+		System.out.println("\nJackPot");
+		System.out.println("-------\n");
+		
+		System.out.println("Si les 3 symboles correspondent,\nvous gagnez une vie supplementaire.");
+		System.out.println("Uniquement valable 5min. apres un combat.\n");
+		
 		try {
 			TimeUnit.SECONDS.sleep(1);
 			System.out.print(s1);
@@ -47,13 +52,16 @@ public class JackpotHandler {
 		System.out.println("\n");
 		
 		if( !s1.equals(s2) || !s1.equals(s3) ) {
-			System.out.println("Pas de chance...");
+			System.out.println("Desole, vous ne gagnez rien...");
 			return;
 		}
 		
 		int currentLives = collectJackpot();
 		
 		if(currentLives != -1) {
+			
+			System.out.println("Bingo, vous gagnez une vie supplementaire.");
+			System.out.println("Vous avez donc maintenant "+currentLives+" vies.\n");
 			
 			for(int i=0; i<currentLives; i++) 
 				System.out.print(LoginHandler.HEARTICON +" ");

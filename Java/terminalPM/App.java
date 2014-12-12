@@ -208,7 +208,7 @@ public class App {
 		System.exit(0);
 	}
 
-	// LANCEMENT DE L'APPLICATION
+	// LANCEMENT DE L'APPLICATION POWER-MANGEURS
 	
 	public static void main(String[] args) {
 		
