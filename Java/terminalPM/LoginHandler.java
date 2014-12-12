@@ -20,7 +20,9 @@ public class LoginHandler {
 	public LoginHandler(Connection c) {
 		
 		this.dbConnection = c;
+		
 		this.scan = new Scanner(System.in);
+		scan.useDelimiter("\\n");
 	}
 	
 	public int login() {
@@ -31,7 +33,7 @@ public class LoginHandler {
 		while( this.userID == 0 || this.lives <= 0 ) {
 			
 			System.out.print("Nom: ");
-			String name = scan.next();
+			String name = scan.next();			
 			
 			retrieveUserDate(name);
 			

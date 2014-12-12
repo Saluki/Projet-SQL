@@ -11,7 +11,7 @@ public class BattleHandler {
 	
 	private static final int BATTLETIME = 1;
 	
-	private static Scanner scan = new Scanner(System.in);
+	private static Scanner scan;
 	
 	private Connection dbConnection;
 	private int userID;
@@ -27,6 +27,9 @@ public class BattleHandler {
 		
 		this.dbConnection = c;
 		this.userID = userID;
+		
+		scan = new Scanner(System.in);
+		scan.useDelimiter("\\n");
 		
 		if( setRandomMonster() == false ) {
 			System.out.println("Yeah, aucun monstre a combattre pour l'instant...");

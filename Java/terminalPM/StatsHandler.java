@@ -13,7 +13,9 @@ public class StatsHandler {
 		
 		this.dbConnection = c;
 		this.userID = ID;
+		
 		this.scan = new Scanner(System.in);
+		scan.useDelimiter("\\n");
 
 		launch();
 	}
@@ -73,7 +75,7 @@ public class StatsHandler {
 		System.out.println("------------------------\n");
 		
 		try {
-			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.statistiques_combats WHERE id_pm = ?");
+			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.stats_pm(?)");
 			ps.setInt(1, userID);
 			ResultSet rs = ps.executeQuery();
 			

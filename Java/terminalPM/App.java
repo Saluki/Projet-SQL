@@ -25,7 +25,7 @@ public class App {
 	private static final String PASS = "password";
 	private static final String DBNAME = "IPL";
 	
-	private static Scanner scan = new Scanner(System.in);
+	private static Scanner scan;
 	
 	private Connection dbConnection;
 	private int userID;
@@ -43,6 +43,9 @@ public class App {
 	 * - Fermer l'application
 	 */
 	public App() {
+		
+		scan = new Scanner(System.in);
+		new Scanner(System.in);
 		
 		dbConnect();
 		
