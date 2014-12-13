@@ -11,7 +11,7 @@ CREATE TABLE projet.power_mangeurs
   nom              VARCHAR(100) NOT NULL UNIQUE CHECK (length(btrim(nom)) >= 3),
   couleur          CHAR(6)      NOT NULL UNIQUE,
   mot_de_passe     VARCHAR(150) NOT NULL CHECK (mot_de_passe <> ''),
-  vie              INTEGER      NOT NULL DEFAULT 10 CHECK (vie >= 0),
+  vie              INTEGER      NOT NULL DEFAULT 10 CHECK (vie >= 0 AND vie <= 10),
   puissance        INTEGER      NOT NULL DEFAULT 30 CHECK (puissance >= 30),
   date_inscription TIMESTAMP    NOT NULL DEFAULT LOCALTIMESTAMP,
   date_deces       TIMESTAMP,
@@ -58,14 +58,17 @@ CREATE TABLE projet.statistiques
 (
   id_pm              INTEGER NOT NULL REFERENCES projet.power_mangeurs (id_pm),
   id_archetype       INTEGER NOT NULL REFERENCES projet.archetypes (id_archetype),
-  nb_combats_total   INTEGER NOT NULL DEFAULT 0 CHECK (nb_combats_total >= 0),
+  nb_combats_total   INTEGER NOT NULL DEFAULT 0,
   nb_victoires_total INTEGER NOT NULL DEFAULT 0 CHECK (nb_victoires_total >= 0),
-  nb_combats_annee   INTEGER NOT NULL DEFAULT 0 CHECK (nb_combats_annee >= 0),
+  nb_combats_annee   INTEGER NOT NULL DEFAULT 0,
   nb_victoires_annee INTEGER NOT NULL DEFAULT 0 CHECK (nb_victoires_annee >= 0),
   PRIMARY KEY (id_pm, id_archetype),
   CHECK (nb_victoires_total <= nb_combats_total),
-  CHECK (nb_victoires_annee <= nb_combats_annee)
-);-- ---------------------------------------------------------------------------------
+  CHECK (nb_victoires_annee <= nb_combats_annee),
+  CHECK (nb_combats_annee <= nb_combats_total),
+  CHECK (nb_victoires_annee <= nb_victoires_total)
+);
+-- ---------------------------------------------------------------------------------
 --                                    Toriko
 -- ---------------------------------------------------------------------------------
 
@@ -194,9 +197,6 @@ BEGIN
 
 	-- Vérifier l'existence du P-M
 	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = _nom_pm;
-	IF (_id_pm IS NULL) THEN
-		RAISE '% n''existe pas !', _nom_pm USING ERRCODE = 'invalid_foreign_key';
-	END IF;
 
 	INSERT INTO projet.power_ups (nom, id_pm, facteur) VALUES (_nom_pu, _id_pm, _facteur_pu) RETURNING id_pu INTO _id_pu;
 
@@ -234,12 +234,11 @@ BEGIN
 
 	RETURN QUERY SELECT
 		 pm.nom,
-		 SUM(s.nb_victoires_annee) AS "victoires"
+		 COALESCE(SUM(s.nb_victoires_annee), 0) AS "victoires"
 	 FROM projet.statistiques s
 		 RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
 	 WHERE pm.vie > 0
 	 GROUP BY pm.nom
-	 HAVING SUM(s.nb_victoires_annee) IS NOT NULL
 	 ORDER BY victoires DESC;
 
 END;
@@ -370,25 +369,16 @@ DECLARE
 	_date_fin	TIMESTAMP;
 BEGIN
 
-	-- Selectionner le nombre de vies du PM
-	SELECT vie INTO _vie FROM projet.power_mangeurs WHERE id_pm = _id_pm;
+	-- Selectionner le nombre de vies du PM et la date de son dernier combat
+	SELECT date_fin INTO _date_fin
+	FROM projet.combats
+	WHERE id_pm = _id_pm AND date_fin IS NOT NULL
+	ORDER BY date_fin DESC
+	LIMIT 1;
 
-	-- Controle que le PM existe
-	IF _vie IS NULL THEN
-		RAISE 'Power Mangeur introuvable';
-	END IF;
-
-	-- Controle que la vie ne soit pas au maximum
-	IF _vie>=10 THEN
-		RAISE 'Vie est au maximum';
-	END IF;
-
-	-- Choper fin dernier combat
-	SELECT c.date_fin INTO _date_fin FROM projet.combats c WHERE c.id_pm = _id_pm ORDER BY date_debut DESC LIMIT 1;
-
-	-- Controle que combat soit bien termine
+	-- Controle qu'il existe un dernier combat
 	IF _date_fin IS NULL THEN
-		RAISE 'Combat en cours';
+		RAISE 'Combat en cours ou inexistant';
 	END IF;
 
 	-- Controle timing
@@ -397,8 +387,7 @@ BEGIN
 	END IF;
 	
 	-- Incremente les vies
-	_vie := _vie + 1;
-	UPDATE projet.power_mangeurs SET vie = _vie WHERE id_pm = _id_pm;
+	UPDATE projet.power_mangeurs SET vie = vie+1 WHERE id_pm = _id_pm RETURNING vie INTO _vie;
 
 	-- Retourne le nombre de vies actuel
 	RETURN _vie;
