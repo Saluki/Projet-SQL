@@ -1,5 +1,6 @@
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Terminal {
@@ -40,25 +41,25 @@ public class Terminal {
             statements.add(db.prepareStatement("SELECT projet.attribuer_pu(?, ?, ?);"));
             statements.add(db.prepareStatement("SELECT * FROM projet.classer_pm();"));
             statements.add(db.prepareStatement("SELECT * FROM projet.liste_decedes"));
-            statements.add(db.prepareStatement("SELECT * FROM projet.historique_combats WHERE nom_pm = ? AND date_debut BETWEEN ? AND ?"));
-            statements.add(db.prepareStatement("SELECT * FROM projet.historique_combats WHERE nom_archetype = ? AND date_debut BETWEEN ? AND ?"));
+            statements.add(db.prepareStatement("SELECT nom_archetype AS \"archetype\", date_debut AS \"date\", est_gagne AS \"issue\" FROM projet.historique_combats WHERE nom_pm = ? AND date_debut BETWEEN ? AND ?"));
+            statements.add(db.prepareStatement("SELECT nom_pm AS \"power_mangeur\", DATE_TRUNC('DAY', date_debut) AS \"date\", COUNT(*) AS \"nb_combats\" FROM projet.historique_combats WHERE nom_archetype = ? AND date_debut BETWEEN ? AND ? GROUP BY \"power_mangeur\", \"date\"")); // nb_combats: nombre de combats par Power Mangeur par jour
         } catch (SQLException e) {
-            System.out.println("Problème de requête préparée !");
+            System.out.println("Probleme de requete preparee !");
             e.printStackTrace();
             System.exit(1);
         }
 
         scan = new Scanner(System.in);
-        scan.useDelimiter("\\n");
+        scan.useDelimiter("(\\n|\\r)");
 
         launch();
 
         try {
             scan.close();
             db.close();
-//            System.out.println("Fermeture de la connexion à la BDD réussie.");
+//            System.out.println("Fermeture de la connexion a la BDD reussie.");
         } catch (SQLException e) {
-            System.out.println("Fermeture de la connexion à la BDD échouée.");
+            System.out.println("Fermeture de la connexion a la BDD echouee.");
         } finally {
             System.out.println("Au revoir !");
         }
@@ -79,6 +80,7 @@ public class Terminal {
             try {
                 choix = scan.nextByte();
             } catch (Exception e) {
+                scan.nextLine();
                 choix = -1;
             }
 
@@ -120,12 +122,12 @@ public class Terminal {
         System.out.println("\nAide");
         System.out.println(" --------------------------------------------------- ");
         System.out.println("| 1 | Inscription d'un Power Mangeur                |");
-        System.out.println("| 2 | Ajout d'un archétype                          |");
+        System.out.println("| 2 | Ajout d'un archetype                          |");
         System.out.println("| 3 | Attribution d'un Power-Up                     |");
         System.out.println("| 4 | Classement des Power Mangeurs                 |");
-        System.out.println("| 5 | Liste des Power Mangeurs décédés cette année  |");
+        System.out.println("| 5 | Liste des Power Mangeurs decedes cette annee  |");
         System.out.println("| 6 | Historique des combats d'un Power Mangeur     |");
-        System.out.println("| 7 | Historique des combats d'un archétype         |");
+        System.out.println("| 7 | Historique des combats d'un archetype         |");
         System.out.println(" ---------------------------------------------------");
         System.out.println("| 0 | Quitter l'application                         |");
         System.out.println(" ---------------------------------------------------");
@@ -144,7 +146,7 @@ public class Terminal {
             try {
                 nom = scan.next();
             } catch (Exception e) {
-                System.out.println("Problème d'input.");
+                System.out.println("Probleme d'input.");
                 return;
             }
             statement.setString(1, nom);
@@ -153,7 +155,7 @@ public class Terminal {
             try {
                 mdp = scan.next();
             } catch (Exception e) {
-                System.out.println("Problème d'input.");
+                System.out.println("Probleme d'input.");
                 return;
             }
             mdp = CryptService.hash(mdp);
@@ -163,22 +165,22 @@ public class Terminal {
             try {
                 couleur = scan.next();
             } catch (Exception e) {
-                System.out.println("Problème d'input.");
+                System.out.println("Probleme d'input.");
                 return;
             }
             statement.setString(3, couleur);
 
         } catch (SQLException e) {
-            System.out.println("Erreur avec la base de données.");
+            System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
         }
 
         System.out.println("Inscription du PM en cours...");
         try {
             statement.execute();
-            System.out.println("Inscription réussie !");
+            System.out.println("Inscription reussie !");
         } catch (SQLException e) {
-            System.out.println("Problème à l'inscription !");
+            System.out.println("Probleme a l'inscription !");
             System.out.println(e.getMessage());
         }
 
@@ -186,11 +188,11 @@ public class Terminal {
 
     private static void ajouter_monstre () {
 
-        System.out.println("\nAjout d'un archétype de monstro-nourriture");
+        System.out.println("\nAjout d'un archetype de monstro-nourriture");
         System.out.println("------------------------------------------\n");
 
         String nom;
-        int facteur;
+        int puissance;
         PreparedStatement statement = statements.get(choix);
 
         try {
@@ -198,38 +200,42 @@ public class Terminal {
             try {
                 nom = scan.next();
             } catch (Exception e) {
-                System.out.println("Problème d'input.");
+                System.out.println("Probleme d'input.");
                 return;
             }
             statement.setString(1, nom);
 
             System.out.print("Facteur : ");
             try {
-                facteur = scan.nextInt();
-            } catch (Exception e) {
+                puissance = scan.nextInt();
+            } catch (InputMismatchException e) {
+                scan.nextLine();
                 System.out.println("Problème d'input.");
                 return;
+            } catch (Exception e) {
+                System.out.println("Probleme d'input.");
+                return;
             }
-            statement.setInt(2, facteur);
+            statement.setInt(2, puissance);
 
         } catch (SQLException e) {
-            System.out.println("Erreur avec la base de données.");
+            System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
         }
 
-        System.out.println("Ajout de l'archétype en cours...");
+        System.out.println("Ajout de l'archetype en cours...");
         try {
             statement.execute();
-            System.out.println("Ajout réussi !");
+            System.out.println("Ajout reussi !");
         } catch (SQLException e) {
-            System.out.println("Problème à l'ajout !");
+            System.out.println("Probleme a l'ajout !");
             System.out.println(e.getMessage());
         }
     }
 
     private static void attribuer_pu () {
 
-        System.out.println("\nCréation d'un Power-Up");
+        System.out.println("\nCreation d'un Power-Up");
         System.out.println("----------------------\n");
 
         String nom_pu, nom_pm;
@@ -237,11 +243,17 @@ public class Terminal {
         PreparedStatement statement = statements.get(choix);
 
         try {
+
+            if (! lister_pm(true)) {
+                System.out.println("Impossible donc d'attribuer de Power-Up.");
+                return;
+            }
+
             System.out.print("Nom du Power Mangeur : ");
             try {
                 nom_pm = scan.next();
             } catch (Exception e) {
-                System.out.println("Problème d'input.");
+                System.out.println("Probleme d'input.");
                 return;
             }
             statement.setString(1, nom_pm);
@@ -250,7 +262,7 @@ public class Terminal {
             try {
                 nom_pu = scan.next();
             } catch (Exception e) {
-                System.out.println("Problème d'input.");
+                System.out.println("Probleme d'input.");
                 return;
             }
             statement.setString(2, nom_pu);
@@ -258,23 +270,27 @@ public class Terminal {
             System.out.print("Facteur de multiplication du Power-Up : ");
             try {
                 facteur_pu = scan.nextInt();
-            } catch (Exception e) {
+            } catch (InputMismatchException e) {
+                scan.nextLine();
                 System.out.println("Problème d'input.");
+                return;
+            } catch (Exception e) {
+                System.out.println("Probleme d'input.");
                 return;
             }
             statement.setInt(3, facteur_pu);
 
         } catch (SQLException e) {
-            System.out.println("Erreur avec la base de données.");
+            System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
         }
 
-        System.out.println("Création du Power-Up en cours...");
+        System.out.println("Creation du Power-Up en cours...");
         try {
             statement.execute();
-            System.out.println("Création réussie !");
+            System.out.println("Creation reussie !");
         } catch (SQLException e) {
-            System.out.println("Problème à la création !");
+            System.out.println("Probleme a la creation !");
             System.out.println(e.getMessage());
         }
     }
@@ -304,9 +320,9 @@ public class Terminal {
                 } while (result.next());
                 System.out.println(" ----------------------------- ");
             } else
-                System.out.println("Il n'y a aucun Power Mangeur enregistré !");
+                System.out.println("Il n'y a aucun Power Mangeur enregistre !");
         } catch (SQLException e) {
-            System.out.println("Erreur avec la base de données.");
+            System.out.println("Erreur avec la base de donnees.");
             System.out.println(e.getMessage());
         }
 
@@ -317,14 +333,14 @@ public class Terminal {
         String nom_pm;
         Date deces;
 
-        System.out.println("\nListe des décès sur l'année");
+        System.out.println("\nListe des deces sur l'annee");
         System.out.println("---------------------------\n");
 
         try {
             ResultSet result = statements.get(choix).executeQuery();
             if (result.next()) {
                 System.out.println(" ------------------------------ ");
-                System.out.println("|  Power Mangeur  | Date décès |");
+                System.out.println("|  Power Mangeur  | Date deces |");
                 System.out.println(" ------------------------------ ");
                 do {
                     nom_pm = result.getString(1);
@@ -337,9 +353,9 @@ public class Terminal {
                 } while (result.next());
                 System.out.println(" ------------------------------ ");
             } else
-                System.out.println("Bonne nouvelle ! Aucun Power Mangeur n'est mort cette année !");
+                System.out.println("Bonne nouvelle ! Aucun Power Mangeur n'est mort cette annee !");
         } catch (SQLException e) {
-            System.out.println("Erreur avec la base de données.");
+            System.out.println("Erreur avec la base de donnees.");
         }
 
     }
@@ -354,25 +370,29 @@ public class Terminal {
         System.out.println("-----------------------------------------\n");
 
         try {
+
+            if (! lister_pm(false))
+                return;
+
             System.out.print("Nom du Power Mangeur : ");
             try {
                 nom_pm = scan.next();
             } catch (Exception e) {
-                System.out.println("Problème d'input.");
+                System.out.println("Probleme d'input.");
                 return;
             }
             statement.setString(1, nom_pm);
 
             while (true) {
-                System.out.print("Début de période : ");
+                System.out.print("Debut de periode : ");
                 try {
                     date_debut = scan.next();
                     debut = Date.valueOf(date_debut);
                 } catch (IllegalArgumentException e) {
-                    System.out.println("La date doit être au format \"YYY-[M]M-[D]D\".");
+                    System.out.println("La date doit etre au format \"YYY-[M]M-[D]D\".");
                     continue;
                 } catch (Exception e) {
-                    System.out.println("Problème d'input.");
+                    System.out.println("Probleme d'input.");
                     return;
                 }
                 statement.setDate(2, debut);
@@ -380,15 +400,15 @@ public class Terminal {
             }
 
             while (true) {
-                System.out.print("Fin de période : ");
+                System.out.print("Fin de periode : ");
                 try {
                     date_fin = scan.next();
                     fin = Date.valueOf(date_fin);
                 } catch (IllegalArgumentException e) {
-                    System.out.println("La date doit être au format \"YYY-[M]M-[D]D\".");
+                    System.out.println("La date doit etre au format \"YYY-[M]M-[D]D\".");
                     continue;
                 } catch (Exception e) {
-                    System.out.println("Problème d'input.");
+                    System.out.println("Probleme d'input.");
                     return;
                 }
                 statement.setDate(3, fin);
@@ -397,74 +417,76 @@ public class Terminal {
 
             System.out.println();
         } catch (SQLException e) {
-            System.out.println("Erreur avec la base de données.");
+            System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
         }
 
         try {
             ResultSet result = statement.executeQuery();
             if (result.next()) {
-                System.out.println(" --------------------------------------------------------- ");
-                System.out.println("| Monstro-nourriture | Date début |  Date fin  |  Issue   |");
-                System.out.println(" --------------------------------------------------------- ");
+                System.out.println(" -------------------------------------------- ");
+                System.out.println("| Monstro-nourriture |    Date    |  Issue   |");
+                System.out.println(" -------------------------------------------- ");
                 do {
-                    nom_archetype = result.getString(2);
+                    nom_archetype = result.getString("archetype");
 
-                    debut = result.getDate(3);
+                    debut = result.getDate("date");
                     date_debut = debut.toString();
 
-                    fin = result.getDate(4);
-                    date_fin = (fin == null) ? " En cours " : fin.toString();
-
-                    if (result.getObject(5) == null)
-                        issue = "Inconnue";
+                    if (result.getObject("issue") == null)
+                        issue = "En cours";
                     else
-                        issue = result.getBoolean(5) ? "Victoire" : "Défaite ";
+                        issue = result.getBoolean("issue") ? "Victoire" : "Defaite ";
 
                     System.out.print("| "+nom_archetype);
                     for (int i = nom_archetype.length(); i < 18; i++)
                         System.out.print(" ");
-                    System.out.println(" | "+date_debut+" | "+date_fin+" | "+issue+" |");
+                    System.out.println(" | "+date_debut+" | "+issue+" |");
                 } while (result.next());
-                System.out.println(" --------------------------------------------------------- ");
+                System.out.println(" -------------------------------------------- ");
             }
             else
-                System.out.println("Aucun combat n'a été trouvé.");
+                System.out.println("Aucun combat n'a ete trouve.");
         } catch (SQLException e) {
-            System.out.println("Problème avec la requête.");
+            System.out.println("Probleme avec la requete.");
             System.out.println(e.getMessage());
         }
     }
 
     private static void historique_archetype () {
 
-        String nom_pm, nom_archetype, date_debut, date_fin, issue;
+        String nom_pm, nom_archetype, date, date_debut, date_fin;
         Date debut, fin;
+        int nb_combats;
         PreparedStatement statement = statements.get(choix);
 
-        System.out.println("\nHistorique des combats d'un archétype");
+        System.out.println("\nHistorique des combats d'un archetype");
         System.out.println("-------------------------------------\n");
 
         try {
-            System.out.print("Nom de l'archétype : ");
+
+            if (! lister_arch())
+                return;
+
+            System.out.print("Nom de l'archetype : ");
             try {
                 nom_archetype = scan.next();
             } catch (Exception e) {
-                System.out.println("Problème d'input.");
+                System.out.println("Probleme d'input.");
                 return;
             }
             statement.setString(1, nom_archetype);
 
             while (true) {
-                System.out.print("Début de période : ");
+                System.out.print("Debut de periode : ");
                 try {
                     date_debut = scan.next();
                     debut = Date.valueOf(date_debut);
                 } catch (IllegalArgumentException e) {
-                    System.out.println("La date doit être au format \"YYY-[M]M-[D]D\".");
+                    System.out.println("La date doit etre au format \"YYY-[M]M-[D]D\".");
                     continue;
                 } catch (Exception e) {
-                    System.out.println("Problème d'input.");
+                    System.out.println("Probleme d'input.");
                     return;
                 }
                 statement.setDate(2, debut);
@@ -472,15 +494,15 @@ public class Terminal {
             }
 
             while (true) {
-                System.out.print("Fin de période : ");
+                System.out.print("Fin de periode : ");
                 try {
                     date_fin = scan.next();
                     fin = Date.valueOf(date_fin);
                 } catch (IllegalArgumentException e) {
-                    System.out.println("La date doit être au format \"YYY-[M]M-[D]D\".");
+                    System.out.println("La date doit etre au format \"YYY-[M]M-[D]D\".");
                     continue;
                 } catch (Exception e) {
-                    System.out.println("Problème d'input.");
+                    System.out.println("Probleme d'input.");
                     return;
                 }
                 statement.setDate(3, fin);
@@ -489,42 +511,66 @@ public class Terminal {
 
             System.out.println();
         } catch (SQLException e) {
-            System.out.println("Erreur avec la base de données.");
+            System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
         }
 
         try {
             ResultSet result = statement.executeQuery();
             if (result.next()) {
-                System.out.println(" ------------------------------------------------------ ");
-                System.out.println("|  Power Mangeur  | Date début |  Date fin  |  Issue   |");
-                System.out.println(" ------------------------------------------------------ ");
+                System.out.println(" ---------------------------------- ");
+                System.out.println("|    Power Mangeur    |    Date    |");
+                System.out.println(" ---------------------------------- ");
                 do {
-                    nom_pm = result.getString(1);
-
-                    debut = result.getDate(3);
-                    date_debut = debut.toString();
-
-                    fin = result.getDate(4);
-                    date_fin = (fin == null) ? " En cours " : fin.toString();
-
-                    if (result.getObject(5) == null)
-                        issue = "Inconnue";
-                    else
-                        issue = result.getBoolean(5) ? "Défaite " : "Victoire";
+                    nom_pm = result.getString("power_mangeur");
+                    date = result.getDate("date").toString();
+                    nb_combats = result.getInt("nb_combats");
+                    if (nb_combats > 1)
+                        nom_pm += " ("+nb_combats+"x)";
 
                     System.out.print("| "+nom_pm);
-                    for (int i = nom_pm.length(); i < 15; i++)
+                    for (int i = nom_pm.length(); i < 19; i++)
                         System.out.print(" ");
-                    System.out.println(" | "+date_debut+" | "+date_fin+" | "+issue+" |");
+                    System.out.println(" | "+date+" |");
                 } while (result.next());
-                System.out.println(" ------------------------------------------------------ ");
+                System.out.println(" ---------------------------------- ");
             }
             else
-                System.out.println("Aucun combat n'a été trouvé.");
+                System.out.println("Aucun combat n'a ete trouve.");
         } catch (SQLException e) {
-            System.out.println("Problème avec la requête.");
+            System.out.println("Probleme avec la requete.");
             System.out.println(e.getMessage());
+        }
+    }
+
+    private static boolean lister_pm (boolean vivant) throws SQLException {
+        String condition = vivant ? " WHERE vie > 0" : "";
+        ResultSet liste = db.prepareStatement("SELECT * FROM projet.power_mangeurs"+condition).executeQuery();
+        if (liste.next()) {
+            System.out.println("Power Mangeurs :");
+            do {
+                System.out.println("\t"+liste.getString("nom"));
+            } while (liste.next());
+            System.out.println();
+            return true;
+        } else {
+            System.out.println("Aucun Power Mangeur rencense !");
+            return false;
+        }
+    }
+
+    private static boolean lister_arch () throws SQLException {
+        ResultSet liste = db.prepareStatement("SELECT * FROM projet.archetypes").executeQuery();
+        if (liste.next()) {
+            System.out.println("Archetypes :");
+            do {
+                System.out.println("\t"+liste.getString("nom"));
+            } while (liste.next());
+            System.out.println();
+            return true;
+        } else {
+            System.out.println("Aucun archetype rencense !");
+            return false;
         }
     }
 }

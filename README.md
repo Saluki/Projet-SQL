@@ -39,4 +39,3 @@ III. Rapport						| 6		|   |
 A faire
 -------
 
-- GRANT

@@ -98,7 +98,7 @@ BEGIN
 		 RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
 	 WHERE pm.vie > 0
 	 GROUP BY pm.nom
-	 HAVING SUM(s.nb_victoires_annee) IS NOT NULL
+	 HAVING "victoires" IS NOT NULL
 	 ORDER BY victoires DESC;
 
 END;
