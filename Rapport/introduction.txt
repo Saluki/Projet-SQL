@@ -1,0 +1,12 @@
+// CONTEXTE
+Nous avons développé une application complete dans le cadre du cours de SQL 
+
+// RESUME HISTOIRE
+Le de
+
+// BUT DU PROJET / COMPOSANTS A DEVELOPPER
+Le but de ce projet est de pouvoir mettre en pratique les concepts vus en cours. 
+
+// TECHNOLOGIES UTILISEES
+
+// DESCRIPTION DOCUMENT
