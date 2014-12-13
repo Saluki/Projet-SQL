@@ -226,21 +226,15 @@ DECLARE
 BEGIN
 
 	-- Selectionner le nombre de vies du PM et la date de son dernier combat
-	SELECT pm.vie, c.date_fin INTO _vie, _date_fin
-	FROM projet.power_mangeurs pm
-		INNER JOIN projet.combats c ON pm.id_pm = c.id_pm
-	WHERE pm.id_pm = _id_pm AND c.date_fin IS NOT NULL
-	ORDER BY c.date_fin DESC
+	SELECT date_fin INTO _date_fin
+	FROM projet.combats
+	WHERE id_pm = _id_pm AND date_fin IS NOT NULL
+	ORDER BY date_fin DESC
 	LIMIT 1;
 
 	-- Controle qu'il existe un dernier combat
 	IF _date_fin IS NULL THEN
 		RAISE 'Combat en cours ou inexistant';
-	END IF;
-
-	-- Controle que la vie ne soit pas au maximum
-	IF _vie>=10 THEN
-		RAISE 'Vie est au maximum';
 	END IF;
 
 	-- Controle timing
@@ -249,8 +243,7 @@ BEGIN
 	END IF;
 	
 	-- Incremente les vies
-	_vie := _vie + 1;
-	UPDATE projet.power_mangeurs SET vie = _vie WHERE id_pm = _id_pm;
+	UPDATE projet.power_mangeurs SET vie = vie+1 WHERE id_pm = _id_pm RETURNING vie INTO _vie;
 
 	-- Retourne le nombre de vies actuel
 	RETURN _vie;
