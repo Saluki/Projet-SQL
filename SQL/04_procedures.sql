@@ -53,9 +53,6 @@ BEGIN
 
 	-- Vérifier l'existence du P-M
 	SELECT id_pm INTO _id_pm FROM projet.power_mangeurs WHERE nom = _nom_pm;
-	IF (_id_pm IS NULL) THEN
-		RAISE '% n''existe pas !', _nom_pm USING ERRCODE = 'invalid_foreign_key';
-	END IF;
 
 	INSERT INTO projet.power_ups (nom, id_pm, facteur) VALUES (_nom_pu, _id_pm, _facteur_pu) RETURNING id_pu INTO _id_pu;
 
@@ -229,25 +226,22 @@ DECLARE
 	_date_fin	TIMESTAMP;
 BEGIN
 
-	-- Selectionner le nombre de vies du PM
-	SELECT vie INTO _vie FROM projet.power_mangeurs WHERE id_pm = _id_pm;
+	-- Selectionner le nombre de vies du PM et la date de son dernier combat
+	SELECT pm.vie, c.date_fin INTO _vie, _date_fin
+	FROM projet.power_mangeurs pm
+		INNER JOIN projet.combats c ON pm.id_pm = c.id_pm
+	WHERE pm.id_pm = _id_pm AND c.date_fin IS NOT NULL
+	ORDER BY c.date_fin DESC
+	LIMIT 1;
 
-	-- Controle que le PM existe
-	IF _vie IS NULL THEN
-		RAISE 'Power Mangeur introuvable';
+	-- Controle qu'il existe un dernier combat
+	IF _date_fin IS NULL THEN
+		RAISE 'Combat en cours ou inexistant';
 	END IF;
 
 	-- Controle que la vie ne soit pas au maximum
 	IF _vie>=10 THEN
 		RAISE 'Vie est au maximum';
-	END IF;
-
-	-- Choper fin dernier combat
-	SELECT c.date_fin INTO _date_fin FROM projet.combats c WHERE c.id_pm = _id_pm ORDER BY date_debut DESC LIMIT 1;
-
-	-- Controle que combat soit bien termine
-	IF _date_fin IS NULL THEN
-		RAISE 'Combat en cours';
 	END IF;
 
 	-- Controle timing
