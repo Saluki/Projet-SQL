@@ -39,8 +39,8 @@ public class Terminal {
             statements.add(db.prepareStatement("SELECT projet.inscrire_pm(?, ?, ?);"));
             statements.add(db.prepareStatement("SELECT projet.ajouter_archetype(?, ?);"));
             statements.add(db.prepareStatement("SELECT projet.attribuer_pu(?, ?, ?);"));
-            statements.add(db.prepareStatement("SELECT * FROM projet.classer_pm();"));
-            statements.add(db.prepareStatement("SELECT * FROM projet.liste_decedes"));
+            statements.add(db.prepareStatement("SELECT nom, victoires FROM projet.classer_pm();"));
+            statements.add(db.prepareStatement("SELECT nom, date_deces FROM projet.liste_decedes"));
             statements.add(db.prepareStatement("SELECT nom_archetype AS \"archetype\", date_debut AS \"date\", est_gagne AS \"issue\" FROM projet.historique_combats WHERE nom_pm = ? AND date_debut BETWEEN ? AND ?"));
             statements.add(db.prepareStatement("SELECT nom_pm AS \"power_mangeur\", DATE_TRUNC('DAY', date_debut) AS \"date\", COUNT(*) AS \"nb_combats\" FROM projet.historique_combats WHERE nom_archetype = ? AND date_debut BETWEEN ? AND ? GROUP BY \"power_mangeur\", \"date\"")); // nb_combats: nombre de combats par Power Mangeur par jour
         } catch (SQLException e) {
@@ -328,8 +328,8 @@ public class Terminal {
                 System.out.println("|  Power Mangeur  | Victoires |");
                 System.out.println(" ----------------------------- ");
                 do {
-                    nom_pm = result.getString(1);
-                    nb_victoires = result.getInt(2);
+                    nom_pm = result.getString("nom");
+                    nb_victoires = result.getInt("victoires");
 
                     System.out.print("| "+nom_pm);
                     for (int i = nom_pm.length(); i < 15; i++)
@@ -361,8 +361,8 @@ public class Terminal {
                 System.out.println("|  Power Mangeur  | Date deces |");
                 System.out.println(" ------------------------------ ");
                 do {
-                    nom_pm = result.getString(1);
-                    deces = result.getDate(2);
+                    nom_pm = result.getString("nom");
+                    deces = result.getDate("date_deces");
 
                     System.out.print("| "+nom_pm);
                     for (int i = nom_pm.length(); i < 15; i++)
@@ -545,6 +545,12 @@ public class Terminal {
             }
 
             System.out.println();
+
+            if (debut.after(fin)) {
+                System.out.println("Periode invalide !");
+                return;
+            }
+
         } catch (SQLException e) {
             System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
