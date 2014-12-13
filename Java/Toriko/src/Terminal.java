@@ -50,7 +50,7 @@ public class Terminal {
         }
 
         scan = new Scanner(System.in);
-        scan.useDelimiter("(\\n|\\r)");
+        scan.useDelimiter(System.getProperty("line.separator"));
 
         launch();
 
@@ -138,10 +138,12 @@ public class Terminal {
         System.out.println("\nInscription d'un Power Mangeur");
         System.out.println("------------------------------\n");
 
-        String nom, mdp, couleur;
+        String nom = null, mdp, couleur;
         PreparedStatement statement = statements.get(choix);
 
         try {
+            // NOM
+
             System.out.print("Nom : ");
             try {
                 nom = scan.next();
@@ -150,6 +152,8 @@ public class Terminal {
                 return;
             }
             statement.setString(1, nom);
+
+            // MOT DE PASSE
 
             System.out.print("Mot de passe : ");
             try {
@@ -161,6 +165,8 @@ public class Terminal {
             mdp = CryptService.hash(mdp);
             statement.setString(2, mdp);
 
+            // COULEUR
+
             System.out.print("Couleur : ");
             try {
                 couleur = scan.next();
@@ -170,6 +176,7 @@ public class Terminal {
             }
             statement.setString(3, couleur);
 
+            System.out.println();
         } catch (SQLException e) {
             System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
@@ -218,6 +225,7 @@ public class Terminal {
             }
             statement.setInt(2, puissance);
 
+            System.out.println();
         } catch (SQLException e) {
             System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
@@ -244,19 +252,28 @@ public class Terminal {
 
         try {
 
-            if (! lister_pm(true)) {
+            // Liste les PM vivants et stop s'il n'en existe aucun
+            ArrayList<String> liste = lister_pm(true);
+            if (liste.isEmpty()) {
                 System.out.println("Impossible donc d'attribuer de Power-Up.");
                 return;
             }
 
-            System.out.print("Nom du Power Mangeur : ");
-            try {
-                nom_pm = scan.next();
-            } catch (Exception e) {
-                System.out.println("Probleme d'input.");
-                return;
+            while (true) {
+                System.out.print("Nom du Power Mangeur : ");
+                try {
+                    nom_pm = scan.next();
+                } catch (Exception e) {
+                    System.out.println("Probleme d'input.");
+                    return;
+                }
+                if (! liste.contains(nom_pm)) {
+                    System.out.println("Ce Power Mangeur n'existe pas.");
+                    continue;
+                }
+                statement.setString(1, nom_pm);
+                break;
             }
-            statement.setString(1, nom_pm);
 
             System.out.print("Nom du Power-Up : ");
             try {
@@ -280,6 +297,7 @@ public class Terminal {
             }
             statement.setInt(3, facteur_pu);
 
+            System.out.println();
         } catch (SQLException e) {
             System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
@@ -290,7 +308,7 @@ public class Terminal {
             statement.execute();
             System.out.println("Creation reussie !");
         } catch (SQLException e) {
-            System.out.println("Probleme a la creation !");
+            System.out.println("Probleme a la creation :");
             System.out.println(e.getMessage());
         }
     }
@@ -371,17 +389,26 @@ public class Terminal {
 
         try {
 
-            if (! lister_pm(false))
+            // Liste tous les PM et stop s'il n'en existe aucun
+            ArrayList<String> liste = lister_pm(false);
+            if (liste.isEmpty())
                 return;
 
-            System.out.print("Nom du Power Mangeur : ");
-            try {
-                nom_pm = scan.next();
-            } catch (Exception e) {
-                System.out.println("Probleme d'input.");
-                return;
+            while (true) {
+                System.out.print("Nom du Power Mangeur : ");
+                try {
+                    nom_pm = scan.next();
+                } catch (Exception e) {
+                    System.out.println("Probleme d'input.");
+                    return;
+                }
+                if (! liste.contains(nom_pm)) {
+                    System.out.println("Ce Power Mangeur n'existe pas.");
+                    continue;
+                }
+                statement.setString(1, nom_pm);
+                break;
             }
-            statement.setString(1, nom_pm);
 
             while (true) {
                 System.out.print("Debut de periode : ");
@@ -416,6 +443,12 @@ public class Terminal {
             }
 
             System.out.println();
+
+            if (debut.after(fin)) {
+                System.out.println("Periode invalide !");
+                return;
+            }
+
         } catch (SQLException e) {
             System.out.println("Erreur avec la base de donnees.");
             System.exit(1);
@@ -465,7 +498,9 @@ public class Terminal {
 
         try {
 
-            if (! lister_arch())
+            // Liste tous les archétypes et stop s'il n'en existe aucun
+            ArrayList<String> liste = lister_arch();
+            if (liste.isEmpty())
                 return;
 
             System.out.print("Nom de l'archetype : ");
@@ -543,34 +578,42 @@ public class Terminal {
         }
     }
 
-    private static boolean lister_pm (boolean vivant) throws SQLException {
-        String condition = vivant ? " WHERE vie > 0" : "";
-        ResultSet liste = db.prepareStatement("SELECT * FROM projet.power_mangeurs"+condition).executeQuery();
+    private static ArrayList<String> lister_pm (boolean vivant) throws SQLException {
+        String statut, condition = vivant ? " WHERE vie > 0" : "";
+        ResultSet liste = db.prepareStatement("SELECT * FROM projet.power_mangeurs"+condition+" ORDER BY date_inscription DESC").executeQuery();
+        ArrayList<String> table = new ArrayList<String>();
         if (liste.next()) {
             System.out.println("Power Mangeurs :");
             do {
-                System.out.println("\t"+liste.getString("nom"));
+                statut = (liste.getInt("vie") > 0) ? "+" : "-";
+                System.out.println("  "+statut+" "+liste.getString("nom"));
+                table.add(liste.getString("nom"));
             } while (liste.next());
             System.out.println();
-            return true;
         } else {
             System.out.println("Aucun Power Mangeur rencense !");
-            return false;
         }
+        return table;
     }
 
-    private static boolean lister_arch () throws SQLException {
-        ResultSet liste = db.prepareStatement("SELECT * FROM projet.archetypes").executeQuery();
+    /**
+     * Sélectionne en BDD tous les archétypes et les liste par ordre alphabétique
+     * @return ArrayList
+     * @throws SQLException
+     */
+    private static ArrayList<String> lister_arch () throws SQLException {
+        ResultSet liste = db.prepareStatement("SELECT * FROM projet.archetypes ORDER BY nom").executeQuery();
+        ArrayList<String> table = new ArrayList<String>();
         if (liste.next()) {
             System.out.println("Archetypes :");
             do {
-                System.out.println("\t"+liste.getString("nom"));
+                System.out.println("  * "+liste.getString("nom"));
+                table.add(liste.getString("nom"));
             } while (liste.next());
             System.out.println();
-            return true;
         } else {
             System.out.println("Aucun archetype rencense !");
-            return false;
         }
+        return table;
     }
 }
