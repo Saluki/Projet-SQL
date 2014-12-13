@@ -1,4 +1,4 @@
-﻿
+﻿﻿
 -- Table power_mangeurs
 
 -- Controle que la date d'inscription soit inferieur a la date de deces
@@ -20,6 +20,10 @@ VALUES ('John', 'FFFFFF', '***', 15);
 -- Controle que le nombre de vies ne soit pas negatif
 INSERT INTO projet.power_mangeurs (nom, couleur, mot_de_passe, vie) 
 VALUES ('John', 'FFFFFF', '***', -4);
+
+-- Controle que le nombre de vies ne soit pas superieur a 10
+INSERT INTO projet.power_mangeurs (nom, couleur, mot_de_passe, vie) 
+VALUES ('John', 'FFFFFF', '***', 11);
 
 -- Table archetypes
 
@@ -83,3 +87,10 @@ VALUES (1, 1, 20, 10, 20, -5);
 -- car en controlant que le nombre de victoires ne puisse pas etre negatif, le nombre de combats 
 -- devra etre aussi plus grand que le nombre de victoires.
 
+-- Controle que le nombre de combats par annee soit inferieur au nombre total de combats
+INSERT INTO projet.statistiques (id_pm, id_archetype, nb_combats_total, nb_victoires_total, nb_combats_annee, nb_victoires_annee) 
+VALUES (1, 1, 20, 10, 30, 10);
+
+-- Controle que le nombre de victoires par annee soit inferieur au nombre total de victoires
+INSERT INTO projet.statistiques (id_pm, id_archetype, nb_combats_total, nb_victoires_total, nb_combats_annee, nb_victoires_annee) 
+VALUES (1, 1, 20, 10, 20, 30);
