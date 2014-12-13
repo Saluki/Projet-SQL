@@ -212,7 +212,7 @@ public class Terminal {
             }
             statement.setString(1, nom);
 
-            System.out.print("Facteur : ");
+            System.out.print("Puissance : ");
             try {
                 puissance = scan.nextInt();
             } catch (InputMismatchException e) {
