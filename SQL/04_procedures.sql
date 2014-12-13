@@ -90,12 +90,11 @@ BEGIN
 
 	RETURN QUERY SELECT
 		 pm.nom,
-		 SUM(s.nb_victoires_annee) AS "victoires"
+		 COALESCE(SUM(s.nb_victoires_annee), 0) AS "victoires"
 	 FROM projet.statistiques s
 		 RIGHT JOIN projet.power_mangeurs pm ON s.id_pm = pm.id_pm
 	 WHERE pm.vie > 0
 	 GROUP BY pm.nom
-	 HAVING "victoires" IS NOT NULL
 	 ORDER BY victoires DESC;
 
 END;
