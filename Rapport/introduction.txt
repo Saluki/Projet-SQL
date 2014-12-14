@@ -1,12 +1,40 @@
-// CONTEXTE
-Nous avons développé une application complete dans le cadre du cours de SQL 
+Introduction
+------------
 
-// RESUME HISTOIRE
-Le de
+Dans le cadre du cours de SQL de deuxième année, nous avons été amenés a developper une application à la fin du 
+premier semestre. Cette application permet de gérer les combats des valeureux ninjas, les Power Mangeurs, contre 
+des infâmes créatures, les Monstro-Nourriture. Chaque Power Mangeur pourra disposer d'un terminal à emporter qui permet de gérer 
+le déroulement d'un combat ainsi que d'avoir des statistiques sur ses combats passés. L'application permettra aussi à 
+l'ermite Tokiro, celui qui dirige les Power Mangeurs, de pouvoir avoir un aperçu de tous les Power Mangeurs.
 
-// BUT DU PROJET / COMPOSANTS A DEVELOPPER
-Le but de ce projet est de pouvoir mettre en pratique les concepts vus en cours. 
+Le but de ce projet est de pouvoir mettre en pratique les concepts vus en cours de SQL. En partant d'un énoncé, 
+nous avons dû développer la structure de la base de données de notre application. Une fois la structure terminée, 
+les différentes tables ont été développées et des contrôles supplémentaires pour garantir la cohérence des données 
+ont été mis en place. En partant de cette base, nous avons pu développer l'application du côté serveur en utilisant 
+des concepts tels que les vues, les procédures et les triggers. Une fois le côté serveur terminé, nous avons développé 
+le côté client en Java en utilisant à chaque fois les capacités du serveur au maximum.
 
-// TECHNOLOGIES UTILISEES
+Ce document présente d'abord quelques clarifications que nous avons effectuées sur l'énoncé du projet ainsi 
+qu'un schéma qui réprésente la structure de notre base de données PostgreSQL. Après, la partie SQL du projet sera traitée 
+en commençant par le code SQL de tous les composants de la base de données, un script introduisant des données valides 
+et un autre introduisant des données invalides pour tester les contraintes des tables. Et pour finir viendra le code source 
+de l'application, c'est-à-dire, le code Java du terminal Tokiro et Power Mangeur.
 
-// DESCRIPTION DOCUMENT
+Clarifications de l'énoncé
+--------------------------
+
+L'énoncé contenait quelques points vagues que nous avons clarifiés après réflexion. Ces clarifications 
+nous ont permis de mieux concevoir l'application, aussi bien au niveau du serveur SQL qu'au niveau des clients Java.
+
+-Lors d'un combat, un archetype devait être selectionné au hasard parmi ceux qui étaient disponibles. 
+Le hasard n'a pas été implémenté en Java grace à la classe Random, mais bien directement au niveau serveur avec une vue.
+
+-Il n'etait pas précisé directement quel actions entreprendre dans le cas ou un combat était cloturé alors que le Power Mangeur 
+etait de puissance égale avec le monstro-nourriture. Nous avons décidé que le monstro-nourriture gagnerait en cas d'égalité.
+
+-Pour éviter que des Power Mangeurs puissent être inscrits avec des noms trop courts, la taille minimale pour le nom 
+devra être de 3 caractères.
+
+-En ce qui concerne les extensions pour le terminal des Power Mangeurs, deux extensions ont étés développés: l'une permettant 
+de visualiser tous les Power Ups utilisés et l'autre offre une fonctionalité de 'Jackpot' permettant de gagner une vie grace a 
+un jeu de hasard.
