@@ -16,24 +16,47 @@ public class JackpotHandler {
 	private Connection dbConnection;
 	private int userID;
 	
-	public JackpotHandler(Connection c, int u) {
+	public JackpotHandler(Connection connection, int userID) {
 		
-		this.dbConnection = c;
-		this.userID = u;
+		this.dbConnection = connection;
+		this.userID = userID;
 		
 		launch();
 	}
-	
-	private void launch() {
-	
-		String s1 = generateRandomSymbol(), s2 = generateRandomSymbol(), s3 = generateRandomSymbol();
 		
+	private void launch() {
+			
 		System.out.println("\nJackPot");
 		System.out.println("-------\n");
 		
 		System.out.println("Si les 3 symboles correspondent,\nvous gagnez une vie supplementaire.");
 		System.out.println("Uniquement valable 5min. apres un combat.\n");
 		
+		boolean jackpotResult = this.runJackpot();
+		
+		if( jackpotResult == false ) {
+			System.out.println("\n\nDesole, vous ne gagnez rien...");
+			return;
+		}
+		
+		int currentLives = collectJackpot();
+		
+		if(currentLives != -1) {
+			
+			System.out.println("\nBingo, vous gagnez une vie supplementaire.");
+			System.out.println("Vous avez donc maintenant "+currentLives+" vies.\n");
+			
+			for(int i=0; i<currentLives; i++) 
+				System.out.print(LoginHandler.HEARTICON +" ");
+		}
+		
+		System.out.println("");
+	}
+	
+	private boolean runJackpot() {
+		
+		String s1 = generateRandomSymbol(), s2 = generateRandomSymbol(), s3 = generateRandomSymbol();
+
 		try {
 			TimeUnit.SECONDS.sleep(1);
 			System.out.print(s1);
@@ -49,24 +72,8 @@ public class JackpotHandler {
 		catch (InterruptedException e) {
 			e.printStackTrace();
 		}
-		System.out.println("\n");
 		
-		if( !s1.equals(s2) || !s1.equals(s3) ) {
-			System.out.println("Desole, vous ne gagnez rien...");
-			return;
-		}
-		
-		int currentLives = collectJackpot();
-		
-		if(currentLives != -1) {
-			
-			System.out.println("Bingo, vous gagnez une vie supplementaire.");
-			System.out.println("Vous avez donc maintenant "+currentLives+" vies.\n");
-			
-			for(int i=0; i<currentLives; i++) 
-				System.out.print(LoginHandler.HEARTICON +" ");
-		}
-		System.out.println("");
+		return ( s1.equals(s2) && s1.equals(s3) );
 	}
 	
 	private int collectJackpot() {

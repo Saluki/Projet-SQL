@@ -16,7 +16,8 @@ public class CryptService {
 
 	public static String hash(String s) {
 		
-		if( s == null ) throw new InvalidParameterException();
+		if( s == null ) 
+			throw new InvalidParameterException();
 				
 		PBEKeySpec spec = new PBEKeySpec(s.toCharArray(), SALT.getBytes(), ITERATIONS, KEYLENGTH);
 		
@@ -39,5 +40,5 @@ public class CryptService {
         
         return hex;
     }
-
+	
 }

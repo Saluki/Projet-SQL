@@ -4,15 +4,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 
 public class HistoryHandler {
 	
 	private Connection dbConnection;
 	private int userID;
 	
-	public HistoryHandler(Connection c, int userID) {
+	public HistoryHandler(Connection connection, int userID) {
 		
-		this.dbConnection = c;
+		this.dbConnection = connection;
 		this.userID = userID;
 		
 		launch();
@@ -36,13 +37,14 @@ public class HistoryHandler {
 			
 			do {	
 				String action = rs.getString("action");
-				String d = rs.getString("date");
+				Timestamp timestamp = rs.getTimestamp("date");
 				
-				System.out.println(d+"\t"+action);
+				System.out.println(timestamp+"\t"+action);
 			}
 			while( rs.next() );
 		} 
-		catch (SQLException e) { e.printStackTrace(); }
+		catch (SQLException e) { 
+			System.out.println( e.getMessage() ); 
+		}		
 	}
-
 }

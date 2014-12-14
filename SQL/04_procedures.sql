@@ -177,13 +177,14 @@ $$ LANGUAGE plpgsql;
 
 -- [X] Utiliser P-U
 
-CREATE FUNCTION projet.utiliser_pu(INTEGER, INTEGER) RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION projet.utiliser_pu(INTEGER, INTEGER) RETURNS INTEGER AS $$
 DECLARE
 	_id_pm					      ALIAS FOR $1;
 	_id_pu					      ALIAS FOR $2;
 	_id_combat				    INTEGER;
 	_facteur							INTEGER;
 	_derniere_utilisation	TIMESTAMP;
+	_puissance	INTEGER;
 BEGIN
 
   -- Vérifier que P-M est effectivement en plein combat et lever une exception si ce n'est pas le cas
@@ -203,13 +204,17 @@ BEGIN
     SELECT facteur INTO _facteur FROM projet.power_ups WHERE id_pu = _id_pu;
 
 		INSERT INTO projet.utilisations (id_combat, id_pu) VALUES (_id_combat, _id_pu);
-		UPDATE projet.power_mangeurs SET puissance = puissance+puissance*_facteur/100 WHERE id_pm = _id_pm;
+
+		SELECT puissance INTO _puissance FROM projet.power_mangeurs WHERE id_pm = _id_pm;
+		_puissance := _puissance+_puissance*_facteur/100;
+		
+		UPDATE projet.power_mangeurs SET puissance = _puissance WHERE id_pm = _id_pm;
 
 	ELSE
 		RAISE 'Ce Power-Up a déjà été utilisé aujourd''hui !';
 	END IF;
 
-	RETURN TRUE;
+	RETURN _puissance;
 
 END;
 $$ LANGUAGE plpgsql;

@@ -9,27 +9,27 @@ import java.util.Scanner;
 
 public class BattleHandler {
 	
-	private static final int BATTLETIME = 1;
+	private static final int BATTLETIME = 5;
+	private static final int DEFAULTPOWER = 30;
 	
-	private static Scanner scan;
+	private static final int ACTION_CLOSE_BATTLE = 1;
+	private static final int ACTION_USE_POWERUP = 2;
+	
+	private static Scanner scanner = new Scanner(System.in);
 	
 	private Connection dbConnection;
 	private int userID;
 	
-	private int battleID;
 	private long beginTimestamp;
 	
 	private int monsterID;
 	private String monsterName;
 	private int monsterPower;
 	
-	public BattleHandler(Connection c, int userID) throws DeadException {
+	public BattleHandler(Connection connection, int userID) throws DeadException {
 		
-		this.dbConnection = c;
+		this.dbConnection = connection;
 		this.userID = userID;
-		
-		scan = new Scanner(System.in);
-		scan.useDelimiter("\\n");
 		
 		if( setRandomMonster() == false ) {
 			System.out.println("Yeah, aucun monstre a combattre pour l'instant...");
@@ -43,12 +43,11 @@ public class BattleHandler {
 		
 		executeBattle();
 	}
-	
-	public BattleHandler(Connection c, int userID, int idCombat) throws DeadException {
+
+	public BattleHandler(Connection connection, int userID, int battleID) throws DeadException {
 		
-		this.dbConnection = c;
+		this.dbConnection = connection;
 		this.userID = userID;
-		this.battleID = idCombat;
 		
 		try {
 			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.combats WHERE id_combat=? AND date_fin IS NULL");
@@ -62,7 +61,7 @@ public class BattleHandler {
 			this.monsterID = rs.getInt("id_archetype");
 		}
 		catch(SQLException e) { 
-			e.printStackTrace();
+			System.out.println( e.getMessage() );
 			return;
 		}
 		
@@ -73,11 +72,11 @@ public class BattleHandler {
 		
 		executeBattle();
 	}
-	
+
 	private void executeBattle() throws DeadException {
 		
 		int choice = -1;
-		while(choice != 1) {
+		while(choice != ACTION_CLOSE_BATTLE) {
 			
 			choice = displayMainMenu();
 			
@@ -86,7 +85,7 @@ public class BattleHandler {
 				return;
 			}
 				
-			if( choice == 2 ) {
+			if(choice == ACTION_USE_POWERUP) {
 				this.usePowerUp();
 			}
 		}
@@ -136,10 +135,9 @@ public class BattleHandler {
 			ResultSet rs = ps.executeQuery();
 			
 			rs.next();
-			this.battleID = rs.getInt(1);
 			this.beginTimestamp = ( new Date() ).getTime();
 			
-			System.out.println("\nDebut des hostilites...");
+			System.out.println("\nTu as une puissance "+DEFAULTPOWER);
 		}
 		catch(SQLException e) {
 
@@ -159,19 +157,19 @@ public class BattleHandler {
 		System.out.println("#2\tUtiliser Power-Up");
 		
 		System.out.println("\nChoix :");
-		return scan.nextInt();
+		return scanner.nextInt();
 	}
 	
-	private void closeBattle(boolean force) {
+	private void closeBattle(boolean forceDeath) {
 		
-		if( force ) {
+		if( forceDeath ) {
 			System.out.println("\nDuree maximale du combat depassee!");
 		}
 		
 		try {
 			PreparedStatement ps = dbConnection.prepareStatement("SELECT * FROM projet.conclure_combat(?,?)");
 			ps.setInt(1, userID);
-			if( force ) {
+			if( forceDeath ) {
 				ps.setBoolean(2, true);
 			} else {
 				ps.setBoolean(2, false);
@@ -187,8 +185,7 @@ public class BattleHandler {
 		}
 		catch(SQLException e) {
 			
-			e.printStackTrace();
-			System.out.println("Probleme survenu lors de la cloture du combat");
+			System.out.println( e.getMessage() );
 		}
 	}
 	
@@ -217,7 +214,7 @@ public class BattleHandler {
 			System.out.println("#0\tAnnuler");
 			
 			System.out.println("\nChoix : ");
-			int choice = scan.nextInt();
+			int choice = scanner.nextInt();
 			
 			if( choice == 0 )
 				return;
@@ -225,7 +222,10 @@ public class BattleHandler {
 			ps = dbConnection.prepareStatement("SELECT * FROM projet.utiliser_pu(?, ?)");
 			ps.setInt(1, userID);
 			ps.setInt(2, choice);
-			rs = ps.executeQuery();			
+			rs = ps.executeQuery();		
+			
+			rs.next();
+			System.out.println("\nTu as maintenant une puissance "+rs.getInt(1));
 		}
 		catch(SQLException e) {
 			

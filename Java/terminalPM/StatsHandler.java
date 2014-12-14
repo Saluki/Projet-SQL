@@ -7,15 +7,12 @@ public class StatsHandler {
 	
 	private Connection dbConnection;
 	private int userID;
-	private Scanner scan;
+	private Scanner scanner = new Scanner(System.in);
 	
 	public StatsHandler(Connection c, int ID) {
 		
 		this.dbConnection = c;
 		this.userID = ID;
-		
-		this.scan = new Scanner(System.in);
-		scan.useDelimiter("\\n");
 
 		launch();
 	}
@@ -61,7 +58,7 @@ public class StatsHandler {
 		
 		System.out.print("\nChoix: ");
 		
-		return scan.nextInt();			
+		return scanner.nextInt();			
 	}
 	
 	/**

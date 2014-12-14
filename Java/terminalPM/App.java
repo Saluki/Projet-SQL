@@ -7,16 +7,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Lance un terminal pour les Power Mangeurs
  * 
  * Ce terminal, apres s'etre connecte au serveur, permettra au Power Mangeur de 
  * lancer ou continuer un combat, de voir le deroulement de son dernier combat 
- * et de visualiser des statistiques concernant ses combats.
- * 
- * @author Corentin
+ * et de visualiser des statistiques concernant ses combats. 
  */
 public class App {
 		
@@ -25,7 +22,13 @@ public class App {
 	private static final String PASS = "password";
 	private static final String DBNAME = "IPL";
 	
-	private static Scanner scan;
+	private static final int CLOSE_ACTION = 0;
+	private static final int BATTLE_ACTION = 1;
+	private static final int HISTORY_ACTION = 2;
+	private static final int STATS_ACTION = 3;
+	private static final int JACKPOT_ACTION = 4;
+	
+	private static Scanner scanner = new Scanner(System.in);
 	
 	private Connection dbConnection;
 	private int userID;
@@ -44,18 +47,16 @@ public class App {
 	 */
 	public App() {
 		
-		scan = new Scanner(System.in);
-		new Scanner(System.in);
-		
-		dbConnect();
+		databaseConnect();
 		
 		userID = ( new LoginHandler(dbConnection) ).login();
 		
 		try {
-			restartBattle();
+			restartLastBattle();
 			
 			int selectedAction = showMenu();
-			while( selectedAction != 0 ) {
+			
+			while( selectedAction != CLOSE_ACTION ) {
 				
 				executeAction(selectedAction);
 				selectedAction = showMenu();
@@ -80,27 +81,27 @@ public class App {
 	 * 
 	 * @return	void
 	 */
-	private void dbConnect() {
+	private void databaseConnect() {
 		
 		try {
 			Class.forName("org.postgresql.Driver");
 		}
-		catch(Exception e) {	
+		catch(ClassNotFoundException e) {	
 			System.out.println("Module PostgreSQL manquant");
 			System.exit(1);
 		}
 	
-		String url="jdbc:postgresql://"+SERVER+"/"+ DBNAME +"?user="+ USER +"&password="+ PASS;
+		String databaseUrl="jdbc:postgresql://"+SERVER+"/"+ DBNAME +"?user="+ USER +"&password="+ PASS;
 		
 		try {
-			this.dbConnection = DriverManager.getConnection(url);
+			this.dbConnection = DriverManager.getConnection(databaseUrl);
 		} 
 		catch (SQLException e) {
 			System.out.println("Serveur PostgreSQL distant ne reponds pas");
 			System.exit(1);
 		}
 	}	
-	
+		
 	/**
 	 * Relance le dernier combat en cours
 	 * 
@@ -112,7 +113,7 @@ public class App {
 	 * 
 	 * @return	void
 	 */
-	private void restartBattle() throws DeadException {
+	private void restartLastBattle() throws DeadException {
 		
 		try {
 			
@@ -125,8 +126,6 @@ public class App {
 			
 			System.out.println("\nRecuperation du combat precedent en cours...");
 			new BattleHandler(dbConnection, userID, rs.getInt("id_combat") );
-			
-			
 		} 
 		catch (SQLException e) { 
 			e.printStackTrace(); 
@@ -147,15 +146,15 @@ public class App {
 		System.out.println("\nTerminal Power Mangeur");
 		System.out.println("----------------------\n");
 		
-		System.out.println("#1\tPOWER MANGEUR ACTIVATION!");
-		System.out.println("#2\tHistorique dernier combat");
-		System.out.println("#3\tStatistiques");
-		System.out.println("#4\tJackpot");
-		System.out.println("#0\tQuitter");
+		System.out.println("#"+ BATTLE_ACTION +"\tPOWER MANGEUR ACTIVATION!");
+		System.out.println("#"+ HISTORY_ACTION +"\tHistorique dernier combat");
+		System.out.println("#"+ STATS_ACTION +"\tStatistiques");
+		System.out.println("#"+ JACKPOT_ACTION +"\tJackpot");
+		System.out.println("#"+ CLOSE_ACTION +"\tQuitter");
 		
 		System.out.print("\nChoix: ");
 		
-		return scan.nextInt();	    
+		return scanner.nextInt();	    
 	}
 	
 	/**
@@ -174,16 +173,16 @@ public class App {
 	 */
 	private void executeAction(int action) throws DeadException {
 		
-		if( action==1 ) {
+		if(action == BATTLE_ACTION) {
 			new BattleHandler(dbConnection, userID);
 		}
-		else if( action==2 ) {
+		else if(action == HISTORY_ACTION) {
 			new HistoryHandler(dbConnection, userID);
 		}
-		else if( action==3 ) {
+		else if(action == STATS_ACTION) {
 			new StatsHandler(dbConnection, userID);
 		}
-		else if( action==4 ) {
+		else if(action == JACKPOT_ACTION) {
 			new JackpotHandler(dbConnection, userID);
 		}
 	}
@@ -207,7 +206,7 @@ public class App {
 			System.exit(1);
 		}
 		
-		System.out.println("\nGoodbye...");
+		System.out.println("\nFermeture de l'application...");
 		System.exit(0);
 	}
 
