@@ -1,5 +1,4 @@
--- BEFORE INSERT combats
--- Vérifier si nouvelle année et mettre stats de l'année à zéro (pour tout le monde) si c'est le cas
+-- Appel màj stats annuelles
 
 CREATE FUNCTION projet.verifier_stats() RETURNS TRIGGER AS $$
 DECLARE
@@ -18,7 +17,7 @@ CREATE TRIGGER verifier_stats
   FOR EACH ROW
   EXECUTE PROCEDURE projet.verifier_stats();
 
--- AFTER INSERT combats
+-- Combat
 
 CREATE FUNCTION projet.ajouter_combat() RETURNS TRIGGER AS $$
   BEGIN
@@ -39,8 +38,6 @@ CREATE TRIGGER ajouter_combat
   AFTER INSERT ON projet.combats
   FOR EACH ROW
   EXECUTE PROCEDURE projet.ajouter_combat();
-
--- AFTER UPDATE combats
 
 -- Victoire
 

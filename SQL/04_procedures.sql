@@ -1,9 +1,24 @@
--- ----------------------------------------------------------------------------------------------------------------------
+-- Si nouvelle année, mets les stats annuelles de tout le monde à zéro
+
+CREATE FUNCTION projet.verifier_stats_annee() RETURNS VOID AS $$
+DECLARE
+	_dernier_combat TIMESTAMP;
+BEGIN
+
+  SELECT date_debut INTO _dernier_combat FROM projet.combats ORDER BY date_debut DESC LIMIT 1;
+  IF (_dernier_combat IS NOT NULL AND EXTRACT(YEAR FROM _dernier_combat) < EXTRACT(YEAR FROM NOW())) THEN
+    UPDATE projet.statistiques SET nb_combats_annee = 0, nb_victoires_annee = 0;
+  END IF;
+
+END;
+$$ LANGUAGE plpgsql;
+
+-- ---------------------------------------------------------------------------------------------------------------------
 --                                                    Toriko
--- ----------------------------------------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------------------------------------------------
 
 
--- [X] Inscription P-M
+-- Inscription d'un PM
 
 CREATE FUNCTION projet.inscrire_pm(VARCHAR(100), VARCHAR(150), CHAR(6)) RETURNS INTEGER AS $$
 DECLARE
@@ -20,9 +35,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- -------------------------------------------------------------------------------------------------
-
--- [X] Ajout archétype
+-- Ajout d'un archétype
 
 CREATE FUNCTION projet.ajouter_archetype(VARCHAR(100), INTEGER) RETURNS INTEGER AS $$
 DECLARE
@@ -38,9 +51,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- -------------------------------------------------------------------------------------------------
-
--- [X] Attribution P-U
+-- Attribution d'un P-U
 
 CREATE FUNCTION projet.attribuer_pu(VARCHAR(100), VARCHAR(100), INTEGER) RETURNS INTEGER AS $$
 DECLARE
@@ -61,24 +72,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- -------------------------------------------------------------------------------------------------
-
--- Vérification des statistiques de l'année courante
-
-CREATE FUNCTION projet.verifier_stats_annee() RETURNS VOID AS $$
-DECLARE
-	_dernier_combat TIMESTAMP;
-BEGIN
-
-  SELECT date_debut INTO _dernier_combat FROM projet.combats ORDER BY date_debut DESC LIMIT 1;
-  IF (_dernier_combat IS NOT NULL AND EXTRACT(YEAR FROM _dernier_combat) < EXTRACT(YEAR FROM NOW())) THEN
-    UPDATE projet.statistiques SET nb_combats_annee = 0, nb_victoires_annee = 0;
-  END IF;
-
-END;
-$$ LANGUAGE plpgsql;
-
--- [X] Classement Power Mangeur
+-- Classement Power Mangeur
 
 CREATE FUNCTION projet.classer_pm() RETURNS TABLE(nom VARCHAR(100), victoires BIGINT) AS $$
 DECLARE
@@ -100,12 +94,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- ----------------------------------------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------------------------------------------------
 --                                                   Power-Mangeurs
--- ----------------------------------------------------------------------------------------------------------------------
+-- ---------------------------------------------------------------------------------------------------------------------
 
 
--- [X] Débuter combat
+-- Débuter un combat
 
 CREATE FUNCTION projet.debuter_combat(INTEGER, INTEGER) RETURNS INTEGER AS $$
 DECLARE
@@ -126,9 +120,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- -------------------------------------------------------------------------------------------------
-
--- [X] Conclure combat
+-- Conclure un combat
 
 CREATE OR REPLACE FUNCTION projet.conclure_combat(INTEGER,BOOLEAN) RETURNS BOOLEAN AS $$
 DECLARE
@@ -173,9 +165,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- -------------------------------------------------------------------------------------------------
-
--- [X] Utiliser P-U
+-- Utiliser un P-U
 
 CREATE OR REPLACE FUNCTION projet.utiliser_pu(INTEGER, INTEGER) RETURNS INTEGER AS $$
 DECLARE
@@ -219,9 +209,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- -------------------------------------------------------------------------------------------------
-
--- [X] Encaisser un prix au JackPot
+-- Encaisser un prix au JackPot
 
 CREATE OR REPLACE FUNCTION projet.encaisser_jackpot(INTEGER) RETURNS INTEGER AS $$
 DECLARE
@@ -256,9 +244,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-----------------------------------------------------------------------------------------------------
-
--- [X] Visualiser historique dernier combat
+-- Visualiser l'historique du dernier combat
 
 CREATE TYPE projet.liste_actions AS (date TIMESTAMP, action VARCHAR(255));
 
@@ -299,14 +285,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- -------------------------------------------------------------------------------------------------
-
 -- Statistiques PM
 
 CREATE FUNCTION projet.stats_pm(INTEGER) RETURNS TABLE(nom_archetype VARCHAR(100), nb_combats_total INTEGER, nb_victoires_total INTEGER, nb_combats_annee INTEGER, nb_victoires_annee INTEGER) AS $$
 DECLARE
 	_id_pm ALIAS FOR $1;
 BEGIN
+
+  PERFORM projet.verifier_stats_annee();
 
   RETURN QUERY SELECT
 		 a.nom AS "nom_archetype",
@@ -321,9 +307,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---  -------------------------------------------------------------------------------------------------
-
--- [X] Espérance de vie
+-- Calculer l'espérance de vie
 
 CREATE FUNCTION projet.esperance_vie(INTEGER) RETURNS INTERVAL AS $$
 DECLARE

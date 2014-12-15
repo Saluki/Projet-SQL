@@ -1,5 +1,4 @@
-﻿﻿
--- Table power_mangeurs
+﻿-- Table power_mangeurs
 
 -- Controle que la date d'inscription soit inferieur a la date de deces
 INSERT INTO projet.power_mangeurs (nom, couleur, mot_de_passe, date_inscription, date_deces) 
@@ -28,11 +27,11 @@ VALUES ('John', 'FFFFFF', '***', 11);
 -- Table archetypes
 
 -- Controle pour voir si le nom de l'archetype n'est pas vide
-INSERT projet.archetypes (nom, puissance)
+INSERT INTO projet.archetypes (nom, puissance)
 VALUES ('', 20);
 
 -- Controle pour s'assurer que la puissance de l'archetype ne soit pas negative
-INSERT projet.archetypes (nom, puissance)
+INSERT INTO projet.archetypes (nom, puissance)
 VALUES ('Couscous', -10);
 
 -- Table power_ups

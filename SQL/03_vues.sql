@@ -2,7 +2,7 @@
 --                                    Toriko
 -- ---------------------------------------------------------------------------------
 
--- Historique combats entre 2 dates / P-M
+-- Historique des combats d'un PM
 
 CREATE VIEW projet.historique_combats (nom_pm, nom_archetype, date_debut, date_fin, est_gagne) AS
   SELECT
@@ -29,7 +29,7 @@ CREATE VIEW projet.classement_pm AS
   HAVING SUM(s.nb_victoires_annee) IS NOT NULL
   ORDER BY victoires DESC;
 */
--- Liste P-M décédés
+-- Liste des PM décédés sur l'année
 
 CREATE VIEW projet.liste_decedes AS
   SELECT
@@ -45,7 +45,7 @@ CREATE VIEW projet.liste_decedes AS
 --                                Power-Mangeurs
 -- ---------------------------------------------------------------------------------
 
--- Monstro-nourriture tire au hasard
+-- Tire un monstro-nourriture au hasard
 
 CREATE VIEW projet.monstre_au_hasard AS
 	SELECT a.*
@@ -63,7 +63,7 @@ CREATE VIEW projet.statistiques_combats AS
     INNER JOIN projet.archetypes a ON s.id_archetype = a.id_archetype;
 */
 
--- Historique power ups
+-- Historique d'utilisations de power ups
 
 CREATE VIEW projet.historique_pu AS
 
